@@ -12,8 +12,26 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+import zipfile
 
 ARCHIVES = (
+    {
+        "name": "ffmpegkit",
+        "url": "https://github.com/sk3llo/ffmpeg_kit_flutter/releases/download/8.1.2-min-gpl/ffmpeg-kit-windows-x86_64-min-gpl-8.1.2.zip",
+        "sha256": "c3a69388f32ff86e4622baada470d2acc55d577a51b6ec15b68560c1f1b6e37b",
+        "suffix": ".zip",
+        "dlls": (
+            "avcodec-62.dll", "avdevice-62.dll", "avfilter-11.dll",
+            "avformat-62.dll", "avutil-60.dll", "libbz2-1.dll",
+            "libffmpegkit.dll", "libfftw3-3.dll", "libgcc_s_seh-1.dll",
+            "libgomp-1.dll", "libiconv-2.dll", "liblzma-5.dll",
+            "librubberband-2.dll", "libsamplerate-0.dll",
+            "libstdc++-6.dll", "libva.dll", "libva_win32.dll",
+            "libvidstab.dll", "libwinpthread-1.dll", "libx264-165.dll",
+            "libx265-216.dll", "swresample-6.dll", "swscale-9.dll",
+            "xvidcore.dll", "zlib1.dll",
+        ),
+    },
     {
         "name": "mpv",
         "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260921/mpv-dev-x86_64-20260921-git-e76a35ec95.7z",
@@ -57,7 +75,7 @@ def main():
         tmp = pathlib.Path(temporary)
         for source in ARCHIVES:
             print("Fetching upstream release:", source["name"], flush=True)
-            archive = tmp / (source["name"] + ".7z")
+            archive = tmp / (source["name"] + source.get("suffix", ".7z"))
             request = urllib.request.Request(source["url"], headers={"User-Agent": "guoapp-dll-provenance-check/1.0"})
             with urllib.request.urlopen(request, timeout=120) as response, archive.open("wb") as output:
                 shutil.copyfileobj(response, output)
@@ -66,7 +84,11 @@ def main():
                 raise SystemExit("UPSTREAM ARCHIVE SHA256 MISMATCH: " + source["name"])
             extracted = tmp / source["name"]
             extracted.mkdir()
-            subprocess.run([tool, "x", "-y", str(archive), "-o" + str(extracted)], check=True, stdout=subprocess.DEVNULL)
+            if archive.suffix == ".zip":
+                with zipfile.ZipFile(archive) as stream:
+                    stream.extractall(extracted)
+            else:
+                subprocess.run([tool, "x", "-y", str(archive), "-o" + str(extracted)], check=True, stdout=subprocess.DEVNULL)
             for name in source["dlls"]:
                 choices = [p for p in extracted.rglob("*") if p.is_file() and p.name.lower() == name.lower()]
                 if len(choices) != 1:
