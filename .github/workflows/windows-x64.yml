@@ -283,6 +283,7 @@ jobs:
         with:
           name: windows-playback-integration-evidence
           path: |
+            build/windows-package-smoke.json
             dist/security-evidence/windows-package-smoke.json
             dist/security-evidence/local-fixture-server.log
             dist/security-evidence/local-fixture-server-error.log
