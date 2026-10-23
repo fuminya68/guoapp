@@ -61,6 +61,148 @@ bool isTrustedHongguoWebviewNavigation(String address) {
   }.contains(uri.host.toLowerCase());
 }
 
+
+int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
+  if (!isTrustedHongguoWebviewNavigation(address)) return null;
+  final uri = Uri.tryParse(address);
+  if (uri == null ||
+      uri.host.toLowerCase() != 'novelquickapp.com' ||
+      uri.pathSegments.length != 3 ||
+      uri.pathSegments[0] != 'player' ||
+      uri.pathSegments[1] != detail.drama.sourceId) {
+    return null;
+  }
+  final vid = uri.pathSegments[2];
+  if (!RegExp(r'^[0-9]{1,32}
+  Drama drama,
+  Episode episode,
+) async {
+  if (!Platform.isWindows) return false;
+  final url = publicHongguoEpisodeUrl(drama, episode);
+  if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
+  try {
+    await Process.start(
+      explorer,
+      [url],
+      mode: ProcessStartMode.detached,
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
+  if (!Platform.isWindows) return false;
+  final url = officialHongguoDramaUrl(drama);
+  if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
+  try {
+    await Process.start(
+      explorer,
+      [url],
+      mode: ProcessStartMode.detached,
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+).hasMatch(vid)) return null;
+  for (var i = 0; i < detail.episodes.length; i++) {
+    if (publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]) ==
+        'https://novelquickapp.com/player/${detail.drama.sourceId}/$vid') {
+      return i;
+    }
+  }
+  return null;
+}
+
+/// Intercept only *same-series* popups from the site's episode list.
+/// Other popups remain blocked by WebView2's native deny policy.
+/// No cookies, streams, page contents or secret playback data are read.
+String? hongguoSameSeriesNavigationScript(Drama drama) {
+  if (drama.source != 'hongguo' ||
+      !RegExp(r'^[0-9]{1,32}
+  Drama drama,
+  Episode episode,
+) async {
+  if (!Platform.isWindows) return false;
+  final url = publicHongguoEpisodeUrl(drama, episode);
+  if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
+  try {
+    await Process.start(
+      explorer,
+      [url],
+      mode: ProcessStartMode.detached,
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
+  if (!Platform.isWindows) return false;
+  final url = officialHongguoDramaUrl(drama);
+  if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
+  try {
+    await Process.start(
+      explorer,
+      [url],
+      mode: ProcessStartMode.detached,
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+).hasMatch(drama.sourceId)) {
+    return null;
+  }
+  final seriesId = drama.sourceId;
+  return '''
+(() => {
+  'use strict';
+  const seriesId = '$seriesId';
+  const allowed = (target) => {
+    try {
+      const uri = new URL(target, window.location.href);
+      const parts = uri.pathname.split('/').filter(Boolean);
+      return uri.protocol === 'https:' &&
+        uri.hostname === 'novelquickapp.com' &&
+        !uri.port && !uri.username && !uri.password &&
+        parts.length === 3 && parts[0] === 'player' &&
+        parts[1] === seriesId && /^[0-9]{1,32}$/.test(parts[2])
+          ? uri.href : null;
+    } catch (_) { return null; }
+  };
+  window.open = (target) => {
+    const url = typeof target === 'string' ? allowed(target) : null;
+    if (url) { window.location.assign(url); return window; }
+    return null;
+  };
+  document.addEventListener('click', (event) => {
+    const element = event.target instanceof Element
+      ? event.target.closest('a[target="_blank"]') : null;
+    if (!element) return;
+    const url = allowed(element.href);
+    if (!url) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.location.assign(url);
+  }, true);
+})();
+''';
+}
+
 Future<bool> openPublicHongguoEpisodeInBrowser(
   Drama drama,
   Episode episode,

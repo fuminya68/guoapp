@@ -78,70 +78,147 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
       if (mounted) setState(() => _error = '此集無法使用 Windows 網頁播放器');
       return;
     }
-    WebviewController? controller;
+
     try {
       final installed = await WebviewController.getWebViewVersion();
       if (installed == null) {
-        throw StateError('找不到 Microsoft Edge WebView2 Runtime，請使用外部瀏覽器觀看。');
+        throw StateError('找不到 Microsoft Edge WebView2 Runtime');
       }
       _environmentReady ??= _configureEnvironment();
       await _environmentReady;
       if (!_permitted) return;
-
-      controller = WebviewController();
-      _controller = controller;
-      await controller.initialize();
-      if (!_permitted) return;
-
-      await controller.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
-      await controller.setDevToolsEnabled(false);
-      await controller.setDefaultContextMenusEnabled(false);
-
-      _urlSubscription = controller.url.listen((url) {
-        if (_closed || url == 'about:blank' ||
-            isTrustedHongguoWebviewNavigation(url)) return;
-        // Refuse an unexpected top-level redirect instead of following it.
-        unawaited(controller!.stop());
-        if (mounted) {
-          setState(() => _error = '網頁導向了未受信任的網站，已停止內嵌播放。');
-        }
-      });
-      _errorSubscription = controller.onLoadError.listen((error) {
-        if (mounted && !_closed) {
-          setState(() => _error = '網頁載入失敗。可改用外部瀏覽器播放本集。');
-        }
-      });
-
-      if (!_permitted) return;
-      setState(() => _ready = true);
       await _navigateToEpisode(_index);
     } catch (_) {
       if (mounted && !_closed) {
-        setState(() => _error = 'WebView2 無法啟動。可以使用外部瀏覽器開啟本集。');
+        setState(() => _error = 'WebView2 無法啟動。請改用外部瀏覽器觀看。');
       }
     }
   }
 
+  /// Each episode gets a fresh WebView2 controller so stale player media,
+  /// route handlers and decoder instances cannot leak into the next episode.
+  /// The shared WebView2 user-data directory retains allowed website sessions.
   Future<void> _navigateToEpisode(int index) async {
     if (!_permitted || index < 0 || index >= widget.detail.episodes.length) return;
     final url = publicHongguoEpisodeUrl(
       widget.detail.drama,
       widget.detail.episodes[index],
     );
-    if (url == null || !isTrustedHongguoWebviewNavigation(url)) return;
+    if (url == null || !isTrustedHongguoWebviewNavigation(url)) {
+      if (mounted) setState(() => _error = '本集網址無效，已停止切換。');
+      return;
+    }
+
     final ticket = ++_generation;
     setState(() {
       _index = index;
       _error = null;
+      _ready = false;
     });
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) return;
+
+    await _urlSubscription?.cancel();
+    await _errorSubscription?.cancel();
+    _urlSubscription = null;
+    _errorSubscription = null;
+    final previous = _controller;
+    _controller = null;
+    if (previous != null) {
+      try {
+        await previous.stop();
+        await previous.dispose();
+      } catch (_) {
+        // A failed close must not authorize an unexpected website.
+      }
+    }
+    if (!_permitted || ticket != _generation) return;
+
+    WebviewController? next;
     try {
-      await controller.loadUrl(url);
+      next = WebviewController();
+      _controller = next;
+      await next.initialize();
+      if (!_permitted || ticket != _generation) return;
+
+      await next.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+      await next.setDevToolsEnabled(false);
+      await next.setDefaultContextMenusEnabled(false);
+      final script = hongguoSameSeriesNavigationScript(widget.detail.drama);
+      if (script != null) {
+        await next.addScriptToExecuteOnDocumentCreated(script);
+      }
+
+      _urlSubscription = next.url.listen((address) {
+        if (_closed || _controller != next || ticket != _generation) return;
+        if (address == 'about:blank') return;
+        if (!isTrustedHongguoWebviewNavigation(address)) {
+          unawaited(next!.stop());
+          if (mounted) {
+            setState(() => _error = '網頁導向了未受信任的網站，已停止播放。');
+          }
+          return;
+        }
+        final selected = hongguoEpisodeIndexFromWebviewUrl(
+          widget.detail,
+          address,
+        );
+        if (selected != null && selected != _index && mounted) {
+          setState(() => _index = selected);
+        }
+      });
+      _errorSubscription = next.onLoadError.listen((error) {
+        if (mounted && !_closed && _controller == next) {
+          setState(() => _error = '網頁載入失敗，可以改用外部瀏覽器觀看本集。');
+        }
+      });
+      if (!_permitted || ticket != _generation) return;
+      setState(() => _ready = true);
+      await next.loadUrl(url);
     } catch (_) {
       if (mounted && !_closed && ticket == _generation) {
-        setState(() => _error = '無法載入本集網頁，請改用外部瀏覽器。');
+        setState(() {
+          _ready = false;
+          _error = '無法開啟本集網頁，請改用外部瀏覽器。';
+        });
       }
+    }
+  }
+
+  Future<void> _chooseEpisode() async {
+    if (!_permitted) return;
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.7,
+          child: Column(
+            children: [
+              const ListTile(title: Text('選擇集數')),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.detail.episodes.length,
+                  itemBuilder: (context, index) {
+                    final episode = widget.detail.episodes[index];
+                    final supported = publicHongguoEpisodeUrl(
+                      widget.detail.drama, episode,
+                    ) != null;
+                    return ListTile(
+                      key: ValueKey('hongguo-episode-$index'),
+                      title: Text(episode.title),
+                      selected: index == _index,
+                      enabled: supported,
+                      onTap: supported ? () => Navigator.pop(context, index) : null,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen != null && mounted && _permitted && chosen != _index) {
+      await _navigateToEpisode(chosen);
     }
   }
 
@@ -190,6 +267,11 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
                 ? () => _navigateToEpisode(_index + 1)
                 : null,
             icon: const Icon(Icons.skip_next),
+          ),
+          IconButton(
+            tooltip: '選擇集數',
+            onPressed: _chooseEpisode,
+            icon: const Icon(Icons.format_list_numbered),
           ),
           IconButton(
             tooltip: '用外部瀏覽器開啟本集',

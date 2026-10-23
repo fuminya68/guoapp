@@ -31,6 +31,40 @@ void main() {
     ]) {expect(isTrustedHongguoWebviewNavigation(u),isFalse);}
   });
 
+
+  test('website episode navigation only accepts actual current-series episodes', () {
+    final detail = DramaDetail(
+      drama('hongguo', '123'),
+      [
+        episode('hongguo-cenc://456'),
+        episode('hongguo-cenc://789'),
+      ],
+    );
+    expect(hongguoEpisodeIndexFromWebviewUrl(
+      detail, 'https://novelquickapp.com/player/123/789'
+    ), 1);
+    for (final bad in [
+      'https://novelquickapp.com/player/124/789',
+      'https://novelquickapp.com/player/123/888',
+      'https://novelquickapp.com/player/123/789/extra',
+      'https://novelquickapp.com.evil.test/player/123/789',
+      'file:///C:/Windows/',
+      'https://novelquickapp.com:8443/player/123/789',
+    ]) {
+      expect(hongguoEpisodeIndexFromWebviewUrl(detail,bad), isNull);
+    }
+  });
+
+  test('popup handler allows only matching-series browser episode routes', () {
+    final script = hongguoSameSeriesNavigationScript(drama('hongguo','123'));
+    expect(script, isNotNull);
+    expect(script, contains("const seriesId = '123'"));
+    expect(script, contains("window.location.assign(url)"));
+    expect(script, contains("document.addEventListener('click'"));
+    expect(hongguoSameSeriesNavigationScript(drama('hongguo','../123')), isNull);
+    expect(hongguoSameSeriesNavigationScript(drama('huangguoai','123')), isNull);
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');
