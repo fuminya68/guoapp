@@ -1,4 +1,4 @@
-name: Diagnose packaged Windows smoke against known-good build
+name: Diagnose packaged Windows smoke against known-good build (UTF-8 logs)
 
 on:
   push:
