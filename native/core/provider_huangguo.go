@@ -50,6 +50,58 @@ var (
 	reAnyArticle      = regexp.MustCompile(`(?is)<article\b[^>]*>.*?</article>`)
 	reHuangguoLink    = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']*/(?:series|video)/([^"'/?#]+)[^"']*)["'][^>]*>.*?</a>`)
 	reAIEpisodeLink   = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']*/video/[^"']+)["'][^>]*>.*?</a>`)
+	reAIEpisodePathNumber = regexp.MustCompile(`(?i)^(?:ep|episode)[-_]?(\d+)package core
+
+import (
+	"context"
+	"crypto/sha256"
+
+	"encoding/json"
+	"errors"
+	"fmt"
+	"html"
+	"io"
+	"net/http"
+	"net/url"
+
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+const (
+	sourceHuangguoAI    = "huangguoai"
+	sourceHuangguoVideo = "huangguo-video"
+	sourceHuangdou      = "huangdou"
+	sourceHongguo       = "hongguo"
+	sourceHuangju       = "huangju"
+	sourceYeguo         = "yeguo"
+	sourceDSD           = "dsd"
+	sourceCloudFront    = "cloudfront"
+	sourceSorani        = "sorani"
+	sourceGuipian       = "guipian"
+	sourceHanxiaoquan   = "hanxiaoquan"
+
+	providerMaxBodyBytes = 20 * 1024 * 1024
+	providerTimeout      = 12 * time.Second
+)
+
+var (
+	huangguoAIBaseURL     = "https://huangguoai.com"
+	huangguoAIBaseMirrors = []string{"https://huangguoai.com", "https://ttvoij.ediayikma.cc", "https://thu.ediayikma.cc", "https://pku.ediayikma.cc", "https://fdu.ediayikma.cc", "https://thu.agdkczeyx.cc"}
+	huangguoVideoBaseURL  = "https://huangguo.video"
+
+	huangguoAISlugs     = []string{"recommend", "newest", "ai-duanju", "ai-manju", "ai-huanlian", "ai-mogai", "ranks/hot"}
+	huangguoAITypeNames = map[string]string{"recommend": "精选推荐", "newest": "最近上新", "ai-duanju": "AI成人短剧", "ai-manju": "AI成人漫剧", "ai-huanlian": "AI换脸", "ai-mogai": "AI魔改", "ranks/hot": "排行榜"}
+
+	reDetailHref      = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']*/detail/([^"'/?#]+)[^"']*)["'][^>]*>.*?</a>`)
+	reDramaCardStart  = regexp.MustCompile(`(?is)<div\b[^>]*class=["'][^"']*\bhg-drama-card\b[^"']*["'][^>]*>`)
+	reVideoCard       = regexp.MustCompile(`(?is)<article\b[^>]*class=["'][^"']*\bvideo-card\b[^"']*["'][^>]*>.*?</article>`)
+	reAnyArticle      = regexp.MustCompile(`(?is)<article\b[^>]*>.*?</article>`)
+	reHuangguoLink    = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']*/(?:series|video)/([^"'/?#]+)[^"']*)["'][^>]*>.*?</a>`)
+)
 	reTitleTag        = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
 	reH1Tag           = regexp.MustCompile(`(?is)<h1[^>]*>(.*?)</h1>`)
 	reDescMeta        = regexp.MustCompile(`(?is)<meta\b[^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']+)["'][^>]*>`)
@@ -785,6 +837,11 @@ func parseHuangguoAIEpisodes(rawHTML, pageURL, sourceID string) []providerEpisod
 		seen[key] = true
 		seen[fullURL] = true
 		idx := episodeIndex(title, 0)
+		if match := reAIEpisodePathNumber.FindStringSubmatch(key); len(match) > 1 {
+			if parsed, err := strconv.Atoi(match[1]); err == nil && parsed > 0 {
+				idx = parsed
+			}
+		}
 		if idx <= 0 {
 			idx = len(episodes) + 1
 		}

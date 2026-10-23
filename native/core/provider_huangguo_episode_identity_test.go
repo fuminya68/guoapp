@@ -14,9 +14,10 @@ func TestHuangguoAIEpisodeParserRejectsGlobalHotAndRelatedTitles(t *testing.T) {
  if got := parseHuangguoAIEpisodes(common, detail, "12"); len(got)!=0 {
    t.Fatalf("unrelated video links were misidentified as drama episodes: %+v",got)
  }
- valid := common + `<section><a href="/video/12/ep-1/">第1集</a><a href="/video/12/ep-2/">第2集</a></section>`
+ valid := common + `<section><a href="/video/12/ep-1/">觀看</a><a href="/video/12/ep-2/">觀看</a></section>`
  got := parseHuangguoAIEpisodes(valid,detail,"12")
  if len(got)!=2 || got[0].Key!="ep-1" || got[1].Key!="ep-2" ||
+  got[0].Index!=1 || got[1].Index!=2 ||
   !strings.Contains(got[0].URL,"/video/12/ep-1/") {
    t.Fatalf("valid source-linked chapters lost: %+v",got)
  }
