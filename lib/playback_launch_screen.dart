@@ -6,7 +6,6 @@ import 'core_bridge.dart';
 import 'follow_state.dart';
 import 'local_store.dart';
 import 'models.dart';
-import 'player_screen.dart';
 import 'hongguo_playback_routing.dart';
 import 'widgets.dart';
 
