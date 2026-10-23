@@ -17,22 +17,7 @@ String? publicHongguoEpisodeUrl(Drama drama, Episode episode) {
     return null;
   }
   final videoId = videoUrl.substring('hongguo-cenc://'.length);
-  final idPattern = RegExp(r'^[0-9]{1,32}
-  if (!Platform.isWindows) return false;
-  final url = officialHongguoDramaUrl(drama);
-  if (url == null) return false;
-  try {
-    await Process.start(
-      'explorer.exe',
-      [url],
-      mode: ProcessStartMode.detached,
-    );
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-);
+  final idPattern = RegExp(r'^[0-9]{1,32}$');
   if (!idPattern.hasMatch(seriesId) || !idPattern.hasMatch(videoId)) {
     return null;
   }
