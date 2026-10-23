@@ -3,6 +3,21 @@ import 'package:duanju_app/hongguo_web_fallback.dart';
 import 'package:duanju_app/models.dart';
 
 void main() {
+  test('Windows browser launches only from protected system directory', () {
+    expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
+    expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');
+    for (final root in [
+      null,
+      '',
+      'explorer.exe',
+      r'C:\Temp',
+      r'C:\Windows\..\Temp',
+      r'\\attacker\share',
+      r'C:/Windows',
+    ]) {
+      expect(trustedWindowsExplorerPath(root), isNull);
+    }
+  });
   Drama drama(String source, String sourceId) =>
       Drama(id: '$source:$sourceId', source: source, sourceId: sourceId, title: '測試');
   test('known public Hongguo detail deep link uses numeric series ID only', () {

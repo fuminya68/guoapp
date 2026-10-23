@@ -2,6 +2,14 @@ import 'dart:io';
 
 import 'models.dart';
 
+String? trustedWindowsExplorerPath(String? systemRoot) {
+  if (systemRoot == null ||
+      !RegExp(r'^[A-Za-z]:\\Windows$', caseSensitive: false).hasMatch(systemRoot)) {
+    return null;
+  }
+  return '$systemRoot\\explorer.exe';
+}
+
 String? officialHongguoDramaUrl(Drama drama) {
   if (drama.source != 'hongguo') return null;
   final sourceId = drama.sourceId;
@@ -31,9 +39,11 @@ Future<bool> openPublicHongguoEpisodeInBrowser(
   if (!Platform.isWindows) return false;
   final url = publicHongguoEpisodeUrl(drama, episode);
   if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
   try {
     await Process.start(
-      'explorer.exe',
+      explorer,
       [url],
       mode: ProcessStartMode.detached,
     );
@@ -47,9 +57,11 @@ Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
   if (!Platform.isWindows) return false;
   final url = officialHongguoDramaUrl(drama);
   if (url == null) return false;
+  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
+  if (explorer == null) return false;
   try {
     await Process.start(
-      'explorer.exe',
+      explorer,
       [url],
       mode: ProcessStartMode.detached,
     );
