@@ -95,6 +95,17 @@ jobs:
           $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & $gcc --version | Select-Object -First 1
 
+      - name: Stage independently verified FFmpeg 8.1.3 Windows DLLs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bundle = Join-Path $env:GITHUB_WORKSPACE 'ffmpeg-813-verified'
+          New-Item -ItemType Directory -Path dist/security-evidence -Force | Out-Null
+          python scripts/prepare_ffmpeg813_windows.py --output $bundle --evidence dist/security-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Verified FFmpeg 8.1.3 bundle could not be staged' }
+          "FFMPEGKIT_LOCAL_DIR=$bundle" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host 'FFmpegKit will use same-major FFmpeg 8.1.3+23 DLL replacements'
+
       - name: Enable Flutter Windows support
         shell: pwsh
         run: flutter config --enable-windows-desktop
@@ -166,6 +177,12 @@ jobs:
           $zip = Get-ChildItem -Path dist/windows -Filter 'zhenguojian-*-windows-x64.zip' -File | Select-Object -First 1
           if (-not $zip) { throw 'Windows output ZIP is missing' }
           Expand-Archive -LiteralPath $zip.FullName -DestinationPath dist/security-bundle -Force
+
+      - name: Confirm patched 8.1.3 DLL ABI and legacy FFmpegKit loading
+        shell: pwsh
+        run: |
+          python scripts/check_ffmpeg813_runtime.py dist/security-bundle
+          if ($LASTEXITCODE -ne 0) { throw 'FFmpeg 8.1.3 ABI or runtime dependencies are invalid' }
 
       - name: Require FFmpeg DLL ASLR, high-entropy VA and NX
         shell: pwsh
