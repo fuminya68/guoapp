@@ -11,7 +11,6 @@ import 'download_picker.dart';
 import 'downloads_screen.dart';
 import 'local_store.dart';
 import 'models.dart';
-import 'player_screen.dart';
 import 'hongguo_playback_routing.dart';
 import 'remote_widgets.dart';
 import 'widgets.dart';
