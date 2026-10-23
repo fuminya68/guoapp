@@ -218,8 +218,15 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 			}
 			continue
 		}
-		if len(content) == 0 || len(content) > providerMaxBodyBytes {
-			return nil, errors.New("红果 App 接口未返回有效数据")
+		if len(content) == 0 {
+			// Some edge servers return HTTP 200 but no response body.
+			// Retry once as a transient error; the caller can then use
+			// the public web catalogue as its safe fallback.
+			lastErr = errors.New("红果 App 接口返回空响应（HTTP 200）")
+			continue
+		}
+		if len(content) > providerMaxBodyBytes {
+			return nil, fmt.Errorf("红果 App 接口响应超过 %d 字节限制", providerMaxBodyBytes)
 		}
 		var result map[string]any
 		decoder := json.NewDecoder(bytes.NewReader(content))
