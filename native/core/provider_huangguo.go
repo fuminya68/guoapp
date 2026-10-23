@@ -266,6 +266,19 @@ func (d *Downloader) fetchHuangguoAIDetail(ctx context.Context, sourceID string)
 	drama := huangguoDetailMetadata(body, detailURL, sourceHuangguoAI, sourceID)
 	title := drama.DisplayTitle()
 	episodes := parseHuangguoAIEpisodes(body, detailURL, sourceID)
+	hasFirstEpisode := false
+	for _, episode := range episodes {
+		if episode.Index == 1 {
+			hasFirstEpisode = true
+			break
+		}
+	}
+	if !hasFirstEpisode {
+		if episode, ok := huangguoAIDetailFirstEpisode(body, detailURL); ok {
+			episodes = append(episodes, episode)
+			sortProviderEpisodes(episodes)
+		}
+	}
 	if len(episodes) == 0 {
 		if media := parseAIVideoURL(body, detailURL); media != "" {
 			episodes = []providerEpisode{{Key: "1", Title: title, URL: detailURL, Index: 1, HLS: media}}
@@ -826,6 +839,22 @@ func parseHuangguoVideoEpisodes(rawHTML, pageURL string) []providerEpisode {
 	}
 	sortProviderEpisodes(result)
 	return result
+}
+
+func huangguoAIDetailFirstEpisode(body, pageURL string) (providerEpisode, bool) {
+	script := regexp.MustCompile(`(?is)<script\b[^>]*id=["']videoInitialData["'][^>]*>(.*?)</script>`).FindStringSubmatch(body)
+	if len(script) < 2 {
+		return providerEpisode{}, false
+	}
+	var metadata map[string]any
+	if json.Unmarshal([]byte(html.UnescapeString(script[1])), &metadata) != nil || mapString(metadata, "ep", "episode") != "1" {
+		return providerEpisode{}, false
+	}
+	media := parseAIVideoInitialData(body, pageURL)
+	if media == "" {
+		return providerEpisode{}, false
+	}
+	return providerEpisode{Key: "ep-1", Title: "第1集", URL: pageURL, Index: 1, HLS: media}, true
 }
 
 func parseAIVideoURL(rawHTML, pageURL string) string {

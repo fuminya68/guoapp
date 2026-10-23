@@ -46,3 +46,17 @@ func TestHuangguoAIInitialDataDoesNotBorrowAnotherEpisode(t *testing.T) {
    t.Fatalf("single-video playback was lost: %q",got)
  }
 }
+
+func TestHuangguoAIDetailFirstEpisodeOnlyFromMatchingMetadata(t *testing.T) {
+ makeScript:=func(episode,media string) string {
+  return `<script id="videoInitialData">{"ep":"`+episode+`","videoSrc":"`+media+`"}</script>`
+ }
+ page:="https://huangguoai.com/detail/12/"
+ got,ok:=huangguoAIDetailFirstEpisode(makeScript("1","https://media.example.test/one.m3u8"),page)
+ if !ok || got.Index!=1 || got.Key!="ep-1" || got.HLS!="https://media.example.test/one.m3u8" || got.URL!=page {
+  t.Fatalf("valid first episode missing: %+v found=%v",got,ok)
+ }
+ if _,ok:=huangguoAIDetailFirstEpisode(makeScript("2","https://media.example.test/two.m3u8"),page);ok {
+  t.Fatal("the second episode was incorrectly inserted as episode one")
+ }
+}
