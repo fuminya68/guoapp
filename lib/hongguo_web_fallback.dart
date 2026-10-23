@@ -29,7 +29,7 @@ String? publicHongguoEpisodeUrl(Drama drama, Episode episode) {
   if (!idPattern.hasMatch(seriesId) || !idPattern.hasMatch(videoId)) {
     return null;
   }
-  return 'https://hongguoduanju.com/player/$seriesId/$videoId';
+  return 'https://novelquickapp.com/player/$seriesId/$videoId';
 }
 
 
@@ -131,12 +131,21 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
 '''.replaceAll('__SERIES_ID__', seriesId);
 }
 
+/// The user's ordinary browser uses the Hongguo website portal, which can
+/// retain its *own* legitimate access session. Never copy credentials.
+String? hongguoEpisodeUrlForSystemBrowser(Drama drama, Episode episode) {
+  final embedded = publicHongguoEpisodeUrl(drama, episode);
+  if (embedded == null) return null;
+  final parts = Uri.parse(embedded).pathSegments;
+  return 'https://hongguoduanju.com/player/${parts[1]}/${parts[2]}';
+}
+
 Future<bool> openPublicHongguoEpisodeInBrowser(
   Drama drama,
   Episode episode,
 ) async {
   if (!Platform.isWindows) return false;
-  final url = publicHongguoEpisodeUrl(drama, episode);
+  final url = hongguoEpisodeUrlForSystemBrowser(drama, episode);
   if (url == null) return false;
   final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
   if (explorer == null) return false;
