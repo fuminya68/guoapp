@@ -1,0 +1,122 @@
+name: Verify shipped Windows DLL provenance
+
+on:
+  push:
+    branches:
+      - 'security/harden-windows-v1'
+    paths:
+      - '.github/workflows/dll-provenance.yml'
+      - 'scripts/verify_windows_dll_provenance.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-artifact:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - name: Check out security branch audit tools
+        uses: actions/checkout@v4
+
+      - name: Download exact SSRF-hardened Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zhenguojian-windows-x64-hardened
+          run-id: 39939208001
+          github-token: ${{ github.token }}
+          path: downloaded-artifact
+
+      - name: Verify packaged ZIP identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $file = Get-ChildItem downloaded-artifact -Filter 'zhenguojian-0.2.64+71-windows-x64.zip' -File | Select-Object -First 1
+          if (-not $file) { throw 'The pinned Windows ZIP was not downloaded' }
+          $expected = 'F9A119463529061D5BCD55CA6FBB6130CC10307F1871C42C753613D6FF78946A'
+          $actual = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
+          if ($actual -ne $expected) { throw "Windows ZIP SHA-256 mismatch: $actual" }
+          New-Item -ItemType Directory -Path evidence -Force | Out-Null
+          "$actual  $($file.Name)" | Out-File evidence/release-zip-sha256.txt -Encoding ascii
+          Expand-Archive -LiteralPath $file.FullName -DestinationPath dll-bundle -Force
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install 7-Zip CLI if required
+        shell: pwsh
+        run: |
+          if (-not (Get-Command 7z.exe, 7z -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+            choco install 7zip --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot install 7-Zip for binary provenance verification' }
+          }
+          $seven = Get-Command 7z.exe, 7z -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $seven) {
+            $path = 'C:\Program Files\7-Zip'
+            if (Test-Path (Join-Path $path '7z.exe')) {
+              $path | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            } else { throw '7-Zip is unavailable' }
+          }
+
+      - name: Independently verify exact upstream DLL bytes
+        shell: pwsh
+        run: |
+          python scripts/verify_windows_dll_provenance.py dll-bundle --evidence evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Upstream DLL hash verification failed' }
+
+      - name: Verify Authenticode signatures and inventory every PE file
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $required = @{
+            'concrt140.dll'='Microsoft'
+            'd3dcompiler_47.dll'='Microsoft'
+            'msvcp140.dll'='Microsoft'
+            'msvcp140_1.dll'='Microsoft'
+            'msvcp140_2.dll'='Microsoft'
+            'msvcp140_atomic_wait.dll'='Microsoft'
+            'msvcp140_codecvt_ids.dll'='Microsoft'
+            'vcruntime140.dll'='Microsoft'
+            'vcruntime140_1.dll'='Microsoft'
+            'libEGL.dll'='Google'
+            'libGLESv2.dll'='Google'
+            'vk_swiftshader.dll'='Google'
+            'vulkan-1.dll'='Google'
+          }
+          $files = @(Get-ChildItem dll-bundle -File |
+            Where-Object { $_.Extension -in @('.dll', '.exe') })
+          if ($files.Count -ne 51) { throw "Unexpected PE file count: $($files.Count)" }
+          $report = foreach ($file in $files) {
+            $sig = Get-AuthenticodeSignature -FilePath $file.FullName
+            $subject = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject } else { '' }
+            if ($required.ContainsKey($file.Name)) {
+              if ($sig.Status -ne 'Valid' -or $subject -notmatch $required[$file.Name]) {
+                throw "Untrusted expected publisher signature: $($file.Name) Status=$($sig.Status) Subject=$subject"
+              }
+            }
+            [PSCustomObject]@{
+              File = $file.Name
+              Bytes = $file.Length
+              SHA256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+              SignatureStatus = [string]$sig.Status
+              SignatureType = [string]$sig.SignatureType
+              Publisher = $subject
+              FileVersion = $file.VersionInfo.FileVersion
+              ProductVersion = $file.VersionInfo.ProductVersion
+            }
+          }
+          $report | Sort-Object File | Export-Csv evidence/windows-authenticode-inventory.csv -NoTypeInformation -Encoding utf8
+          Write-Host "Validated expected Microsoft/Google publishers: $($required.Count)"
+          Write-Host "Inspected PE files: $($files.Count)"
+
+      - name: Upload provenance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-dll-provenance-evidence
+          path: evidence
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,228 @@
+name: Hardened Windows x64 (all sources)
+
+on:
+  push:
+    branches:
+      - 'windows-build/**'
+      - 'security/**'
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'lib/**'
+      - 'native/**'
+      - 'test/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'pubspec.lock'
+      - 'pubspec.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - name: Resolve exact Dart dependencies
+        run: flutter pub get
+      - name: OSV known-vulnerability scan (Go and Dart)
+        uses: google/osv-scanner-action/osv-scanner-action@7f58dd6750d78fc29a900ba64b1a0f946f62fba4 # v2.6.0
+        with:
+          scan-args: 'scan source --lockfile=pubspec.lock --lockfile=native/go.mod'
+
+  windows-x64:
+    needs: dependency-audit
+    runs-on: windows-2022
+    timeout-minutes: 110
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install patched Go 1.26.10 toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+
+      - name: Install MinGW-w64 compiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install mingw --version=16.1.0 --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Chocolatey mingw install failed: $LASTEXITCODE" }
+          $candidates = @(
+            'C:\ProgramData\mingw64\mingw64\bin',
+            'C:\ProgramData\mingw64\bin',
+            'C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin',
+            'C:\msys64\mingw64\bin'
+          )
+          $gcc = $null
+          foreach ($dir in $candidates) {
+            if (Test-Path (Join-Path $dir 'gcc.exe')) {
+              $gcc = Join-Path $dir 'gcc.exe'
+              break
+            }
+          }
+          if (-not $gcc) {
+            $existing = Get-Command x86_64-w64-mingw32-gcc, gcc -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($existing) { $gcc = $existing.Source }
+          }
+          if (-not $gcc) { throw 'MinGW-w64 x64 gcc not found' }
+          $bin = Split-Path $gcc -Parent
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $gcc --version | Select-Object -First 1
+
+      - name: Enable Flutter Windows support
+        shell: pwsh
+        run: flutter config --enable-windows-desktop
+
+      - name: Resolve Windows Flutter dependencies
+        shell: pwsh
+        run: flutter pub get
+
+      - name: Flutter pairing trust regression tests
+        shell: pwsh
+        run: flutter test test/lan_security_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+
+      - name: Verify Go modules checksums
+        shell: pwsh
+        working-directory: native
+        run: go mod verify
+
+      - name: SSRF regression tests (Go)
+        shell: pwsh
+        working-directory: native
+        run: |
+          go test ./core -run '^TestMediaSSRF' -count=1
+          if ($LASTEXITCODE -ne 0) { throw 'SSRF security regression tests failed' }
+
+      - name: Scan reachable Go vulnerabilities
+        shell: pwsh
+        working-directory: native
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          if ($LASTEXITCODE -ne 0) { throw 'govulncheck installation failed' }
+          $scanner = Join-Path (go env GOPATH) 'bin/govulncheck.exe'
+          & $scanner ./...
+          if ($LASTEXITCODE -ne 0) { throw 'govulncheck reported reachable vulnerabilities or scanner failure' }
+
+      - name: Build zhenguojian with all sources
+        shell: pwsh
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          GOSUMDB: sum.golang.org
+        run: python scripts/build_windows.py --all-sources
+
+      - name: Verify Windows ZIP and bundled executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $line = Get-Content pubspec.yaml | Where-Object { $_ -match '^version:\s*\S+' } | Select-Object -First 1
+          if (-not $line) { throw 'Missing app version' }
+          $version = ($line -replace '^version:\s*', '').Trim()
+          $zip = "dist/windows/zhenguojian-$version-windows-x64.zip"
+          if (-not (Test-Path $zip)) { throw "Missing $zip" }
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip).Path)
+          try {
+            $entries = @($archive.Entries | ForEach-Object { $_.FullName })
+            foreach ($file in @('zhenguojian.exe','duanju_core.dll','flutter_windows.dll','libffmpegkit.dll','libmpv-2.dll','data/icudtl.dat','data/app.so')) {
+              if ($entries -notcontains $file) { throw "ZIP is missing $file" }
+            }
+          } finally {
+            $archive.Dispose()
+          }
+          Get-FileHash $zip -Algorithm SHA256 | Format-List
+
+      - name: Extract compiled bundle for independent native-DLL validation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path dist/security-evidence -Force | Out-Null
+          $zip = Get-ChildItem -Path dist/windows -Filter 'zhenguojian-*-windows-x64.zip' -File | Select-Object -First 1
+          if (-not $zip) { throw 'Windows output ZIP is missing' }
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath dist/security-bundle -Force
+
+      - name: Require FFmpeg DLL ASLR, high-entropy VA and NX
+        shell: pwsh
+        run: |
+          python scripts/check_windows_dll_mitigations.py dist/security-bundle --report dist/security-evidence/ffmpeg-mitigations.csv
+          if ($LASTEXITCODE -ne 0) { throw 'FFmpeg DLL mitigation audit failed' }
+
+      - name: Independently compare mpv, ANGLE and FFmpeg DLLs with upstream releases
+        shell: pwsh
+        run: |
+          if (-not (Get-Command 7z.exe, 7z -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+            choco install 7zip --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw '7-Zip dependency failed' }
+            $env:PATH += ';C:\Program Files\7-Zip'
+          }
+          python scripts/verify_windows_dll_provenance.py dist/security-bundle --evidence dist/security-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Native DLL source provenance verification failed' }
+
+      - name: Upload full native DLL verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-dll-evidence
+          path: dist/security-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Windows Defender scan (fail closed)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = (Get-ChildItem -Path dist/windows -Filter 'zhenguojian-*-windows-x64.zip' | Select-Object -First 1).FullName
+          if (-not $zip) { throw 'Windows package not found' }
+          $destination = Join-Path $env:RUNNER_TEMP 'zhenguojian-defender-scan'
+          Expand-Archive -LiteralPath $zip -DestinationPath $destination -Force
+          $health = Get-MpComputerStatus -ErrorAction Stop
+          if ($health.AntivirusEnabled -ne $true) {
+            throw 'Microsoft Defender is not active: cannot certify build artifact'
+          }
+          Write-Host "Defender definitions: $($health.AntivirusSignatureVersion)"
+          Start-MpScan -ScanType CustomScan -ScanPath $destination -ErrorAction Stop
+          $detections = @(Get-MpThreatDetection -ErrorAction Stop |
+            Where-Object { @($_.Resources | Where-Object { $_ -like "*zhenguojian-defender-scan*" }).Count -gt 0 })
+          if ($detections.Count -ne 0) {
+            $detections | Format-List | Out-String | Write-Host
+            throw 'Microsoft Defender reported malicious content in the Windows bundle'
+          }
+          foreach ($required in @('zhenguojian.exe', 'duanju_core.dll', 'libmpv-2.dll')) {
+            if (-not (Test-Path (Join-Path $destination $required))) {
+              throw "File removed during antivirus scan: $required"
+            }
+          }
+          Write-Host 'Defender custom scan completed without detections'
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhenguojian-windows-x64-hardened
+          path: dist/windows/zhenguojian-*-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 14

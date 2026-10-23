@@ -203,7 +203,7 @@ class _LanSyncScreenState extends State<LanSyncScreen> {
                       SwitchListTile.adaptive(
                         key: const ValueKey('lan-enabled'),
                         title: const Text('设备互联'),
-                        subtitle: const Text('同一局域网直连，接收端无需点击确认'),
+                        subtitle: const Text('同一局域网直连；新设备首次配对需接收端确认'),
                         value: link.enabled,
                         onChanged: _busy || link.store.locked
                             ? null
@@ -240,7 +240,7 @@ class _LanSyncScreenState extends State<LanSyncScreen> {
                         ),
                         subtitle: Text(
                           remote == null
-                              ? '仅发现一台设备时自动连接，多台时由发起端选择'
+                              ? '仅自动重连已配对设备；新设备请手动选择'
                               : '对方用户 · ' + remote.user,
                         ),
                         trailing: remote == null

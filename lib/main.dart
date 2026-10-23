@@ -132,6 +132,58 @@ class _AppBootstrapState extends State<AppBootstrap>
                 : 'phone',
           );
           LanController.current = link;
+          link.confirmPairing = (peer) async {
+            if (!mounted || store == null || store!.locked ||
+                !link.receiving) return false;
+            final promptContext = navigator.currentState?.overlay?.context;
+            if (promptContext == null || !promptContext.mounted) return false;
+            final epoch = store!.profileEpoch;
+            BuildContext? dialogContext;
+            final timeout = Timer(const Duration(seconds: 25), () {
+              final current = dialogContext;
+              if (current != null && current.mounted) {
+                Navigator.of(current, rootNavigator: true).pop(false);
+              }
+            });
+            try {
+              final approved = await showDialog<bool>(
+                context: promptContext,
+                useRootNavigator: true,
+                barrierDismissible: false,
+                builder: (context) {
+                  dialogContext = context;
+                  return AlertDialog(
+                    title: const Text('允许新设备连接？'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('设备：${peer.name}'),
+                        const SizedBox(height: 8),
+                        Text('设备指纹：${peer.pin.substring(0, 16)}…'),
+                        const SizedBox(height: 12),
+                        const Text('首次连接将允许对方请求同步追剧记录及推送播放。请确认这是您自己的设备。'),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('拒绝'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('允许'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              return approved == true && mounted && link.receiving &&
+                  !store!.locked && store!.profileEpoch == epoch;
+            } finally {
+              timeout.cancel();
+            }
+          };
           link.openPlayback = (request) async {
             final epoch = request.profileEpoch;
             if (request.cancelled ||
