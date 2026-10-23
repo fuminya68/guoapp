@@ -73,45 +73,7 @@ int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
     return null;
   }
   final vid = uri.pathSegments[2];
-  if (!RegExp(r'^[0-9]{1,32}
-  Drama drama,
-  Episode episode,
-) async {
-  if (!Platform.isWindows) return false;
-  final url = publicHongguoEpisodeUrl(drama, episode);
-  if (url == null) return false;
-  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
-  if (explorer == null) return false;
-  try {
-    await Process.start(
-      explorer,
-      [url],
-      mode: ProcessStartMode.detached,
-    );
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
-  if (!Platform.isWindows) return false;
-  final url = officialHongguoDramaUrl(drama);
-  if (url == null) return false;
-  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
-  if (explorer == null) return false;
-  try {
-    await Process.start(
-      explorer,
-      [url],
-      mode: ProcessStartMode.detached,
-    );
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-).hasMatch(vid)) return null;
+  if (!RegExp(r'^[0-9]{1,32}$').hasMatch(vid)) return null;
   for (var i = 0; i < detail.episodes.length; i++) {
     if (publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]) ==
         'https://novelquickapp.com/player/${detail.drama.sourceId}/$vid') {
@@ -121,50 +83,11 @@ Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
   return null;
 }
 
-/// Intercept only *same-series* popups from the site's episode list.
-/// Other popups remain blocked by WebView2's native deny policy.
-/// No cookies, streams, page contents or secret playback data are read.
+/// Rewrite only same-series episode popups. Native popup policy remains deny.
+/// Does not read cookies, playback keys or DOM media information.
 String? hongguoSameSeriesNavigationScript(Drama drama) {
   if (drama.source != 'hongguo' ||
-      !RegExp(r'^[0-9]{1,32}
-  Drama drama,
-  Episode episode,
-) async {
-  if (!Platform.isWindows) return false;
-  final url = publicHongguoEpisodeUrl(drama, episode);
-  if (url == null) return false;
-  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
-  if (explorer == null) return false;
-  try {
-    await Process.start(
-      explorer,
-      [url],
-      mode: ProcessStartMode.detached,
-    );
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-Future<bool> openOfficialHongguoDramaInBrowser(Drama drama) async {
-  if (!Platform.isWindows) return false;
-  final url = officialHongguoDramaUrl(drama);
-  if (url == null) return false;
-  final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
-  if (explorer == null) return false;
-  try {
-    await Process.start(
-      explorer,
-      [url],
-      mode: ProcessStartMode.detached,
-    );
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-).hasMatch(drama.sourceId)) {
+      !RegExp(r'^[0-9]{1,32}$').hasMatch(drama.sourceId)) {
     return null;
   }
   final seriesId = drama.sourceId;
