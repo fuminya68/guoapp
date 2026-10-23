@@ -91,10 +91,10 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
     return null;
   }
   final seriesId = drama.sourceId;
-  return '''
+  return r'''
 (() => {
   'use strict';
-  const seriesId = '$seriesId';
+  const seriesId = '__SERIES_ID__';
   const allowed = (target) => {
     try {
       const uri = new URL(target, window.location.href);
@@ -123,7 +123,7 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
     window.location.assign(url);
   }, true);
 })();
-''';
+'''.replaceAll('__SERIES_ID__', seriesId);
 }
 
 Future<bool> openPublicHongguoEpisodeInBrowser(
