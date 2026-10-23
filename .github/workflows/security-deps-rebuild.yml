@@ -27,9 +27,12 @@ jobs:
           go mod tidy
           go mod verify
       - name: Run Go tests with patched dependencies
+        id: patched_tests
+        continue-on-error: true
         working-directory: native
         run: go test ./...
       - name: Upload reviewed module lockfiles
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: go-security-lockfiles
@@ -38,3 +41,8 @@ jobs:
             native/go.sum
           if-no-files-found: error
           retention-days: 7
+      - name: Keep failed Go tests as a blocking result
+        if: steps.patched_tests.outcome == 'failure'
+        run: |
+          echo "::error::Patched dependency lockfiles were captured, but Go tests failed."
+          exit 1
