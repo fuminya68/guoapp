@@ -3,6 +3,7 @@ import json
 import platform
 import re
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -13,6 +14,10 @@ root = Path(__file__).resolve().parents[1]
 
 
 def main():
+    # Windows GitHub runners default to cp1252, while native Flutter/mpv output
+    # may contain Unicode. Always preserve diagnostics instead of crashing.
+    sys.stdout.reconfigure(errors='backslashreplace')
+    sys.stderr.reconfigure(errors='backslashreplace')
     parser = argparse.ArgumentParser()
     add_variant_argument(parser)
     variant = BuildVariant(parser.parse_args().all_sources)
