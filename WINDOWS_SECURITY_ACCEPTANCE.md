@@ -12,7 +12,7 @@ Branch: `security/mpv-windows-integrations`. These are release gating tests; **t
 ## Windows functional CI acceptance
 
 1. Build the **same** Windows x64 all-sources ZIP that is offered for download, then unpack it and check native DLLs.
-2. Start the **packaged executable** using its explicit `--package-smoke` entry point. Confirm Go native core initializes, FFmpegKit reads a real short MP4, performs a real remux into MKV, and libmpv decodes and advances playback for the resulting file. The smoke writes a JSON report; failure blocks upload.
+2. Start the **packaged executable** using its explicit `--package-smoke` entry point. Confirm Go native core initializes, FFmpegKit reads a real short MP4, performs a real remux into MKV, and libmpv opens and parses the resulting file in headless mode (without asserting rendered frames). The smoke writes a JSON report; failure blocks upload.
 3. Generate reproducible local MP4 and HTTP HLS fixtures from the checksum-verified FFmpeg tool bundled temporarily in CI. `integration_test/windows_media_test.dart` opens a **Windows Flutter desktop GUI**, verifies a synthetic catalog/detail episode, decodes MP4 video, switches episodes through GUI and decodes HLS via local-only HTTP.
 4. Run the existing Flutter `downloads_test.dart` and `media_library_test.dart` regression suites. These are UI/data/merge-related tests, not proof that every real provider's download endpoint is reachable.
 5. Upload build artifacts only after all security and functional checks pass.
