@@ -1,0 +1,40 @@
+name: Resolve Go security dependency updates
+
+on:
+  push:
+    branches: ['security/harden-windows-v1']
+    paths: ['.github/workflows/security-deps-rebuild.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-go-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+      - name: Upgrade vulnerable Go modules
+        working-directory: native
+        run: |
+          set -euo pipefail
+          go get github.com/cloudflare/circl@v1.6.3 golang.org/x/net@v0.55.0 golang.org/x/text@v0.39.0
+          go mod tidy
+          go mod verify
+      - name: Run Go tests with patched dependencies
+        working-directory: native
+        run: go test ./...
+      - name: Upload reviewed module lockfiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-security-lockfiles
+          path: |
+            native/go.mod
+            native/go.sum
+          if-no-files-found: error
+          retention-days: 7
