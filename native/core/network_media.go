@@ -138,6 +138,11 @@ func (d *Downloader) doMediaRequestWithClient(request *http.Request, client *htt
 	}
 	keyRequest := d.isHuangguoVideoURL(request.URL) && strings.HasPrefix(request.URL.Path, "/api/hls_key/")
 	origin := request.URL.Scheme + "://" + request.URL.Host
+	if keyRequest {
+		// A public off-site redirect must not receive X-Preview-Token, which
+		// Go's default http.Client would otherwise copy as a custom header.
+		client = scopedMediaPreviewClient(client, providerMediaOrigin(request.URL))
+	}
 	for attempt := 0; attempt < 2; attempt++ {
 		if keyRequest {
 			token, err := d.huangguoPreviewToken(request.Context(), origin, request.Header.Get("Referer"))
