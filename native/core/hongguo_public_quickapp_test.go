@@ -6,6 +6,7 @@ import (
  "io"
  "net/http"
  "net/url"
+ "sort"
  "strings"
  "testing"
  "time"
@@ -23,7 +24,7 @@ func TestHongguoPublicPlayerEndpointAI(t *testing.T) {
  if len(dramas)==0 {t.Fatal("empty AI catalog")}
  positives:=0
  for index,drama:=range dramas {
-   if index>=6 {break}
+   if index>=1 {break}
    _,chapters,err:=engine.downloader.fetchHongguoChapters(ctx,drama.SourceID)
    if err!=nil||len(chapters)==0 {t.Logf("DETAIL sample=%d err=%v",index+1,err);continue}
    videoID:=strings.TrimPrefix(chapters[0].VideoURL,"hongguo-cenc://")
@@ -43,6 +44,20 @@ func TestHongguoPublicPlayerEndpointAI(t *testing.T) {
    if len(page)==0 {
      for _,key:=range []string{"player_page","player_","player"} {
        if candidate:=routerLoaderMap(parseRouterData(string(buf)),key);len(candidate)>len(page){page=candidate}
+     }
+   }
+   if index==0 {
+     names:=make([]string,0,len(page))
+     for k:=range page {names=append(names,k)}
+     sort.Strings(names)
+     t.Logf("PLAYER_ROOT_KEYS=%v",names)
+     for _,k:=range names {
+       obj,ok:=page[k].(map[string]any)
+       if !ok {continue}
+       nested:=make([]string,0,len(obj))
+       for nk:=range obj {nested=append(nested,nk)}
+       sort.Strings(nested)
+       t.Logf("PLAYER_CHILD_KEYS=%s:%v",k,nested)
      }
    }
    info:=nestedMap(page,"video_player_info")
