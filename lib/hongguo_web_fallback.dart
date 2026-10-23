@@ -66,7 +66,8 @@ int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
   if (!isTrustedHongguoWebviewNavigation(address)) return null;
   final uri = Uri.tryParse(address);
   if (uri == null ||
-      uri.host.toLowerCase() != 'novelquickapp.com' ||
+      !const {'novelquickapp.com', 'hongguoduanju.com'}
+          .contains(uri.host.toLowerCase()) ||
       uri.pathSegments.length != 3 ||
       uri.pathSegments[0] != 'player' ||
       uri.pathSegments[1] != detail.drama.sourceId) {
@@ -75,8 +76,12 @@ int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
   final vid = uri.pathSegments[2];
   if (!RegExp(r'^[0-9]{1,32}$').hasMatch(vid)) return null;
   for (var i = 0; i < detail.episodes.length; i++) {
-    if (publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]) ==
-        'https://novelquickapp.com/player/${detail.drama.sourceId}/$vid') {
+    final expected = publicHongguoEpisodeUrl(
+      detail.drama,
+      detail.episodes[i],
+    );
+    if (expected != null &&
+        Uri.parse(expected).pathSegments[2] == vid) {
       return i;
     }
   }
@@ -100,7 +105,7 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
       const uri = new URL(target, window.location.href);
       const parts = uri.pathname.split('/').filter(Boolean);
       return uri.protocol === 'https:' &&
-        uri.hostname === 'novelquickapp.com' &&
+        ['hongguoduanju.com', 'novelquickapp.com'].includes(uri.hostname) &&
         !uri.port && !uri.username && !uri.password &&
         parts.length === 3 && parts[0] === 'player' &&
         parts[1] === seriesId && /^[0-9]{1,32}$/.test(parts[2])
@@ -126,12 +131,21 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
 '''.replaceAll('__SERIES_ID__', seriesId);
 }
 
+/// The user's ordinary browser uses the Hongguo website portal, which can
+/// retain its *own* legitimate access session. Never copy credentials.
+String? hongguoEpisodeUrlForSystemBrowser(Drama drama, Episode episode) {
+  final embedded = publicHongguoEpisodeUrl(drama, episode);
+  if (embedded == null) return null;
+  final parts = Uri.parse(embedded).pathSegments;
+  return 'https://hongguoduanju.com/player/${parts[1]}/${parts[2]}';
+}
+
 Future<bool> openPublicHongguoEpisodeInBrowser(
   Drama drama,
   Episode episode,
 ) async {
   if (!Platform.isWindows) return false;
-  final url = publicHongguoEpisodeUrl(drama, episode);
+  final url = hongguoEpisodeUrlForSystemBrowser(drama, episode);
   if (url == null) return false;
   final explorer = trustedWindowsExplorerPath(Platform.environment['SystemRoot']);
   if (explorer == null) return false;

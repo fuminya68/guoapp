@@ -95,6 +95,29 @@ void main() {
     }
   });
 
+  test('working browser URLs for episodes 16/17 are exact, but embedded site stays unchanged', () {
+    final show = drama('hongguo', '7697209252699442201');
+    final chapters = [
+      episode('hongguo-cenc://7697250072865541144'),
+      episode('hongguo-cenc://7697249981073198104'),
+    ];
+    final detail = DramaDetail(show, chapters);
+    expect(hongguoEpisodeUrlForSystemBrowser(show, chapters[0]),
+      'https://hongguoduanju.com/player/7697209252699442201/7697250072865541144');
+    expect(hongguoEpisodeUrlForSystemBrowser(show, chapters[1]),
+      'https://hongguoduanju.com/player/7697209252699442201/7697249981073198104');
+    expect(publicHongguoEpisodeUrl(show, chapters[1]),
+      'https://novelquickapp.com/player/7697209252699442201/7697249981073198104');
+    expect(hongguoEpisodeIndexFromWebviewUrl(detail,
+      'https://hongguoduanju.com/player/7697209252699442201/7697249981073198104'), 1);
+    expect(hongguoEpisodeIndexFromWebviewUrl(detail,
+      'https://novelquickapp.com/player/7697209252699442201/7697250072865541144'), 0);
+    expect(hongguoEpisodeIndexFromWebviewUrl(detail,
+      'https://hongguoduanju.com.evil.example/player/7697209252699442201/7697250072865541144'), isNull);
+    expect(hongguoEpisodeUrlForSystemBrowser(
+      drama('huangguoai','7697209252699442201'), chapters[0]), isNull);
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');

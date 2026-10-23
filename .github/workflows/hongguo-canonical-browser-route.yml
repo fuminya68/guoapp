@@ -1,0 +1,28 @@
+name: Hongguo exact-episode system browser navigation
+on:
+  push:
+    branches:
+      - security/hongguo-canonical-player-host-20261024
+    paths:
+      - lib/hongguo_web_fallback.dart
+      - test/hongguo_web_fallback_test.dart
+      - .github/workflows/hongguo-canonical-browser-route.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-exact-routes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Verify exact URLs and safe cross-domain URL observation
+        run: flutter test test/hongguo_web_fallback_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+      - name: Dart static analysis
+        run: dart analyze lib/hongguo_web_fallback.dart test/hongguo_web_fallback_test.dart
