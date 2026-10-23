@@ -1470,6 +1470,18 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
   }
 
+  Future<void> _openHongguoEpisodePage() async {
+    if (_index < 0 || _index >= widget.detail.episodes.length) return;
+    final episode = widget.detail.episodes[_index];
+    if (publicHongguoEpisodeUrl(widget.detail.drama, episode) == null) return;
+    if (!await openPublicHongguoEpisodeInBrowser(
+      widget.detail.drama,
+      episode,
+    )) {
+      _notice('無法開啟公開播放頁，請檢查瀏覽器設定。');
+    }
+  }
+
   void _back() {
     if (_showFullscreen && !_television) {
       _rotate();
@@ -1804,6 +1816,22 @@ class _PlayerScreenState extends State<PlayerScreen>
                           icon: const Icon(Icons.receipt_long_rounded),
                           label: const Text('查看播放日記'),
                         ),
+                        if (Platform.isWindows &&
+                            !_localFailure &&
+                            !widget.localOnly &&
+                            _index >= 0 &&
+                            _index < widget.detail.episodes.length &&
+                            publicHongguoEpisodeUrl(
+                                  widget.detail.drama,
+                                  widget.detail.episodes[_index],
+                                ) !=
+                                null)
+                          TextButton.icon(
+                            key: const ValueKey('hongguo-web-current-episode'),
+                            onPressed: _openHongguoEpisodePage,
+                            icon: const Icon(Icons.web_rounded),
+                            label: const Text('在公開網頁嘗試觀看本集'),
+                          ),
                         if (Platform.isWindows &&
                             !_localFailure &&
                             !widget.localOnly &&
