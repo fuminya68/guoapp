@@ -112,6 +112,13 @@ jobs:
         working-directory: native
         run: go mod verify
 
+      - name: SSRF regression tests (Go)
+        shell: pwsh
+        working-directory: native
+        run: |
+          go test ./core -run '^TestMediaSSRF' -count=1
+          if ($LASTEXITCODE -ne 0) { throw 'SSRF security regression tests failed' }
+
       - name: Scan reachable Go vulnerabilities
         shell: pwsh
         working-directory: native
