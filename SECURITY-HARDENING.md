@@ -49,13 +49,19 @@ verification, or independent review of the bundled native media DLLs.
   material from its history; deletion in this fork cannot revoke leaked keys.
 - Verify reproducibility of Dart lockfile resolution. In this build, the
   runner executes `flutter pub get` to resolve a stale upstream lockfile.
-- **Unresolved SSRF surface:** `isProviderHTTPMediaURL` currently allows
-  arbitrary HTTP(S) hosts. `nativeStreamServer.nativeRewrite` can transform
-  untrusted HLS media/segment URLs into proxied requests, and redirects or DNS
-  resolution can target local or private-network endpoints. A proper fix must
-  reject private/loopback/link-local destinations at dial time (including
-  redirect and DNS rebinding cases), without breaking intentional local media
-  fixtures. Do not mark the app production-safe until this path is addressed.
+- **SSRF mitigation under review:** `native/core/media_ssrf.go` now validates
+  untrusted HLS media URLs, rejects loopback/private/link-local/reserved IPs
+  and hostnames, checks redirect targets, resolves and checks the full DNS
+  address set at dial time, then connects directly to the checked IP.
+  The local playback streaming proxy, HLS manifest fetching, and offline media
+  downloads use this stricter transport. This guards against the original
+  local-network and DNS-rebinding SSRF pathways in these media flows.
+  The mitigation intentionally disables HTTP proxies and specialized
+  TLS-browser-fingerprint transports for these media requests. Some providers
+  may not work until there is an equivalent proxy-safe implementation.
+  Security testing alone does not prove real playback compatibility.
+  Other app-originated HTTP clients, including catalog and image paths, have
+  NOT received a comprehensive SSRF audit and remain outside this fix.
 - Audit the origin, maintenance and known vulnerabilities of pinned
   libmpv/FFmpeg/ANGLE Windows native libraries. SHA-256 pinning proves byte
   identity, not that downloaded bytes are benign.
