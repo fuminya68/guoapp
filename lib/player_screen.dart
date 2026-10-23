@@ -23,6 +23,7 @@ import 'follow_state.dart';
 import 'local_store.dart';
 import 'models.dart';
 import 'hongguo_web_fallback.dart';
+import 'hongguo_web_player_screen.dart';
 import 'playback_loader.dart';
 import 'playback_preloader.dart';
 import 'playback_recovery.dart';
@@ -1470,6 +1471,23 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
   }
 
+  Future<void> _openEmbeddedHongguoEpisode() async {
+    if (_index < 0 || _index >= widget.detail.episodes.length) return;
+    if (!supportsHongguoInAppWebPlayback(
+      windows: Platform.isWindows,
+      detail: widget.detail,
+      episodeIndex: _index,
+      localOnly: widget.localOnly,
+    )) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => HongguoWebPlayerScreen(
+        detail: widget.detail,
+        initialIndex: _index,
+        store: widget.store,
+      ),
+    ));
+  }
+
   Future<void> _openHongguoEpisodePage() async {
     if (_index < 0 || _index >= widget.detail.episodes.length) return;
     final episode = widget.detail.episodes[_index];
@@ -1816,6 +1834,21 @@ class _PlayerScreenState extends State<PlayerScreen>
                           icon: const Icon(Icons.receipt_long_rounded),
                           label: const Text('查看播放日記'),
                         ),
+                        if (Platform.isWindows &&
+                            !_localFailure &&
+                            !widget.localOnly &&
+                            _index >= 0 &&
+                            _index < widget.detail.episodes.length &&
+                            publicHongguoEpisodeUrl(
+                                  widget.detail.drama,
+                                  widget.detail.episodes[_index],
+                                ) != null)
+                          FilledButton.tonalIcon(
+                            key: const ValueKey('hongguo-in-app-browser'),
+                            onPressed: _openEmbeddedHongguoEpisode,
+                            icon: const Icon(Icons.web_asset_rounded),
+                            label: const Text('在程式內用網頁播放器觀看'),
+                          ),
                         if (Platform.isWindows &&
                             !_localFailure &&
                             !widget.localOnly &&

@@ -32,6 +32,35 @@ String? publicHongguoEpisodeUrl(Drama drama, Episode episode) {
   return 'https://novelquickapp.com/player/$seriesId/$videoId';
 }
 
+
+bool supportsHongguoInAppWebPlayback({
+  required bool windows,
+  required DramaDetail detail,
+  required int episodeIndex,
+  bool localOnly = false,
+}) {
+  return windows &&
+      !localOnly &&
+      episodeIndex >= 0 &&
+      episodeIndex < detail.episodes.length &&
+      publicHongguoEpisodeUrl(
+        detail.drama,
+        detail.episodes[episodeIndex],
+      ) != null;
+}
+
+bool isTrustedHongguoWebviewNavigation(String address) {
+  final uri = Uri.tryParse(address);
+  if (uri == null || uri.scheme != 'https' ||
+      uri.userInfo.isNotEmpty || uri.hasPort) return false;
+  return const {
+    'novelquickapp.com',
+    'applink.novelquickapp.com',
+    'hongguoduanju.com',
+    'www.hongguoduanju.com',
+  }.contains(uri.host.toLowerCase());
+}
+
 Future<bool> openPublicHongguoEpisodeInBrowser(
   Drama drama,
   Episode episode,

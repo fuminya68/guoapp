@@ -3,6 +3,34 @@ import 'package:duanju_app/hongguo_web_fallback.dart';
 import 'package:duanju_app/models.dart';
 
 void main() {
+  test('Windows direct play selects only validated Hongguo URLs', () {
+    final item = Drama(id:'hongguo:123', source:'hongguo', sourceId:'123', title:'修仙滿級回現代');
+    final detail = DramaDetail(item, [
+      Episode({'videoUrl': 'hongguo-cenc://456', 'currentEpisode': 1}, 1),
+      Episode({'videoUrl': 'https://not-allowed.example/movie', 'currentEpisode': 2}, 2),
+    ]);
+    expect(supportsHongguoInAppWebPlayback(windows:true, detail:detail, episodeIndex:0), isTrue);
+    expect(supportsHongguoInAppWebPlayback(windows:true, detail:detail, episodeIndex:1), isFalse);
+    expect(supportsHongguoInAppWebPlayback(windows:true, detail:detail, episodeIndex:-1), isFalse);
+    expect(supportsHongguoInAppWebPlayback(windows:true, detail:detail, episodeIndex:2), isFalse);
+    expect(supportsHongguoInAppWebPlayback(windows:true, detail:detail, episodeIndex:0,localOnly:true), isFalse);
+    expect(supportsHongguoInAppWebPlayback(windows:false, detail:detail, episodeIndex:0), isFalse);
+  });
+
+  test('in-app top-level navigation only allows trusted HTTPS hosts', () {
+    expect(isTrustedHongguoWebviewNavigation('https://novelquickapp.com/player/123/456'),isTrue);
+    expect(isTrustedHongguoWebviewNavigation('https://hongguoduanju.com/detail?series_id=123'),isTrue);
+    for (final u in [
+      'http://novelquickapp.com/player/123/456',
+      'https://novelquickapp.com.evil.example/player/123/456',
+      'https://novelquickapp.com:8443/player/123/456',
+      'https://attacker@novelquickapp.com/player/123/456',
+      'javascript:alert(1)',
+      'file:///C:/Windows/System32/',
+      'https://example.com/',
+    ]) {expect(isTrustedHongguoWebviewNavigation(u),isFalse);}
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');

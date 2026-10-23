@@ -7,6 +7,7 @@ import 'follow_state.dart';
 import 'local_store.dart';
 import 'models.dart';
 import 'player_screen.dart';
+import 'hongguo_playback_routing.dart';
 import 'widgets.dart';
 
 Future<void> openPlaybackDirectly(
@@ -63,7 +64,7 @@ Future<void> openPlaybackDirectly(
     if (!context.mounted || profileEpoch != store.profileEpoch) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PlayerScreen(
+        builder: (_) => buildPreferredPlaybackScreen(
           detail: merged,
           initialIndex: index,
           initialPosition: position,
@@ -189,7 +190,7 @@ class _PlaybackLaunchScreenState extends State<PlaybackLaunchScreen> {
       }
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => PlayerScreen(
+          builder: (_) => buildPreferredPlaybackScreen(
             detail: merged,
             initialIndex: index,
             initialPosition: position,

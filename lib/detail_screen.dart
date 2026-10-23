@@ -12,6 +12,7 @@ import 'downloads_screen.dart';
 import 'local_store.dart';
 import 'models.dart';
 import 'player_screen.dart';
+import 'hongguo_playback_routing.dart';
 import 'remote_widgets.dart';
 import 'widgets.dart';
 import 'sources_screen.dart';
@@ -274,7 +275,7 @@ class _DetailScreenState extends State<DetailScreen> {
     }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PlayerScreen(
+        builder: (_) => buildPreferredPlaybackScreen(
           detail: detail,
           initialIndex: index,
           initialPosition: position,
