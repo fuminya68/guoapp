@@ -71,7 +71,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          choco install mingw --no-progress -y
+          choco install mingw --version=16.1.0 --no-progress -y
           if ($LASTEXITCODE -ne 0) { throw "Chocolatey mingw install failed: $LASTEXITCODE" }
           $candidates = @(
             'C:\ProgramData\mingw64\mingw64\bin',
