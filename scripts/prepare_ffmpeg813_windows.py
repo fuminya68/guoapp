@@ -120,6 +120,10 @@ def main():
         # Build provenance is *not* enough: verify a functioning vendor ffmpeg
         # binary and actual runtime library versions in the Windows validation step.
         original_exe = unique_file(ff, "ffmpeg.exe")
+        # CI uses the *same SHA256-verified* upstream ffmpeg.exe and DLLs to
+        # generate deterministic local playback fixtures and package smoke media.
+        # tools/ is intentionally ignored by FFMPEGKIT_LOCAL_DIR (only bin/ is shipped).
+        shutil.copytree(new_bin, args.output / "tools")
         smoke = subprocess.run([str(original_exe), "-version"], capture_output=True, text=True, timeout=60)
         if smoke.returncode != 0 or "n8.1.3" not in smoke.stdout:
             raise RuntimeError("FFmpeg 8.1.3 vendor self-identification failed: " + smoke.stderr)
