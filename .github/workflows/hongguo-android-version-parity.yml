@@ -1,0 +1,26 @@
+name: Android version metadata A-B diagnostic
+on:
+  push:
+    branches:
+      - diagnostics/hongguo-android-version-parity-20261024
+    paths:
+      - native/core/hongguo_android_version_parity_test.go
+      - .github/workflows/hongguo-android-version-parity.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-profile-compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Compare version 73532 / 73632 / 73932 request responses without exposing bodies or credentials
+        working-directory: native
+        run: go test ./core -run '^TestHongguoAndroidVersionRequestParity$' -count=1 -v -timeout 2m
