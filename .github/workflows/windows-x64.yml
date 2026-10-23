@@ -104,6 +104,7 @@ jobs:
           python scripts/prepare_ffmpeg813_windows.py --output $bundle --evidence dist/security-evidence
           if ($LASTEXITCODE -ne 0) { throw 'Verified FFmpeg 8.1.3 bundle could not be staged' }
           "FFMPEGKIT_LOCAL_DIR=$bundle" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          (Join-Path $bundle 'tools') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Write-Host 'FFmpegKit will use same-major FFmpeg 8.1.3+23 DLL replacements'
 
       - name: Enable Flutter Windows support
@@ -236,10 +237,62 @@ jobs:
           }
           Write-Host 'Defender custom scan completed without detections'
 
+      - name: Verify packaged Windows EXE, native playback and remux
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python scripts/smoke_windows.py --all-sources
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged Windows application failed startup / MP4 decode / real remux smoke' }
+          Copy-Item build/windows-package-smoke.json dist/security-evidence/windows-package-smoke.json -Force
+
+      - name: Windows GUI integration (catalog, MP4, HLS, episode switching)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python scripts/create_windows_ci_fixtures.py --output build/ci-fixtures
+          if ($LASTEXITCODE -ne 0) { throw 'Could not generate Windows video fixtures' }
+          $stdout = Join-Path (Get-Location) 'dist/security-evidence/local-fixture-server.log'
+          $stderr = Join-Path (Get-Location) 'dist/security-evidence/local-fixture-server-error.log'
+          $python = (Get-Command python).Source
+          $server = Start-Process -FilePath $python -ArgumentList 'scripts/serve_test_media.py','--directory','build/ci-fixtures','--port','38473' -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          try {
+            $ready = $false
+            for ($attempt=0; $attempt -lt 30; $attempt++) {
+              try {
+                $response = Invoke-WebRequest -Uri 'http://127.0.0.1:38473/_test/status' -TimeoutSec 2 -UseBasicParsing
+                if ($response.StatusCode -eq 200) { $ready = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+            }
+            if (-not $ready) { throw 'Local CI media server failed to start' }
+            flutter test integration_test/windows_media_test.dart -d windows --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=FIXTURE_BASE_URL=http://127.0.0.1:38473
+            if ($LASTEXITCODE -ne 0) { throw 'Real Windows GUI MP4/HLS/episode test failed' }
+          } finally {
+            if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
+          }
+
+      - name: Download and local media merge Flutter regressions
+        shell: pwsh
+        run: |
+          flutter test test/downloads_test.dart test/media_library_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+          if ($LASTEXITCODE -ne 0) { throw 'Download/merge regression tests failed' }
+
+      - name: Upload Windows integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-playback-integration-evidence
+          path: |
+            dist/security-evidence/windows-package-smoke.json
+            dist/security-evidence/local-fixture-server.log
+            dist/security-evidence/local-fixture-server-error.log
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
-          name: zhenguojian-windows-x64-ffmpeg813-experimental
+          name: zhenguojian-windows-x64-mpv20261021-integration
           path: dist/windows/zhenguojian-*-windows-x64.zip
           if-no-files-found: error
           retention-days: 14
