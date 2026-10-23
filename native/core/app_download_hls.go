@@ -150,6 +150,14 @@ func (manager *nativeDownloads) downloadBundle(ctx context.Context, media provid
 				return "", errors.New("分片地址无效")
 			}
 			resolved := parsed.ResolveReference(relative).String()
+			if strings.HasPrefix(resolved, "data:") && key {
+				// Inline AES keys are never sent over the network.
+			} else {
+				candidate, err := url.Parse(resolved)
+				if err != nil || mediaSSRFAllowedURL(candidate) != nil {
+					return "", errors.New("下载播放清单包含非公网媒体地址")
+				}
+			}
 			if playlist {
 				return walk(resolved, "", nativeDownloadAssetName(resolved, ".m3u8"), depth+1)
 			}
