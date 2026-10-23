@@ -2,6 +2,7 @@ package core
 
 import (
  "strings"
+ "context"
  "testing"
 )
 
@@ -58,5 +59,36 @@ func TestHuangguoAIDetailFirstEpisodeOnlyFromMatchingMetadata(t *testing.T) {
  }
  if _,ok:=huangguoAIDetailFirstEpisode(makeScript("2","https://media.example.test/two.m3u8"),page);ok {
   t.Fatal("the second episode was incorrectly inserted as episode one")
+ }
+}
+
+func TestHuangguoAIRejectsStaleCrossDramaPlaybackTasks(t *testing.T) {
+ for _,bad:=range []string{
+   "https://huangguoai.com/video/9919/",
+   "https://huangguoai.com/video/117/ep-1/",
+   "https://huangguoai.com/detail/117/",
+   "https://attacker.example/video/12/ep-1/",
+ } {
+  if huangguoAIPageBelongsToDrama(bad,"12") {
+   t.Fatalf("unrelated page passed ownership validation: %s",bad)
+  }
+  downloader:=&Downloader{}
+  _,err:=downloader.resolveProviderMedia(context.Background(),Task{
+   DramaID:providerDramaID(sourceHuangguoAI,"12"),
+   Chapter:Chapter{Source:sourceHuangguoAI,PageURL:bad,VideoURL:"https://cdn.example.test/fake.m3u8"},
+  })
+  if err==nil || !strings.Contains(err.Error(),"已停止播放") {
+   t.Fatalf("stale task did not fail closed: %q %v",bad,err)
+  }
+ }
+ for _,good:=range []string{
+  "https://huangguoai.com/detail/12/",
+  "https://huangguoai.com/video/12/",
+  "https://huangguoai.com/video/12/ep-2/",
+  "https://thu.ediayikma.cc/video/12/ep-2/",
+ } {
+  if !huangguoAIPageBelongsToDrama(good,"12") {
+   t.Fatalf("valid page incorrectly rejected: %s",good)
+  }
  }
 }

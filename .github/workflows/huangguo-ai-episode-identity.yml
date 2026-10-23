@@ -5,6 +5,7 @@ on:
       - security/huangguo-episode-identity-20261024
     paths:
       - native/core/provider_huangguo.go
+      - native/core/provider_media.go
       - native/core/provider_huangguo_episode_identity_test.go
       - native/core/huangguo_ai_real_ownership_test.go
       - .github/workflows/huangguo-ai-episode-identity.yml
@@ -29,6 +30,9 @@ jobs:
       - name: Never substitute episode one for a missing episode
         working-directory: native
         run: go test ./core -run TestHuangguoAIInitialDataDoesNotBorrowAnotherEpisode -count=1 -v
+      - name: Reject cached cross-drama playback tasks
+        working-directory: native
+        run: go test ./core -run TestHuangguoAIRejectsStaleCrossDramaPlaybackTasks -count=1 -v
       - name: Confirm real separate episodes for the reported dramas
         working-directory: native
         run: go test ./core -run TestHuangguoAIRealEpisodeOwnershipLive -count=1 -v -timeout 3m

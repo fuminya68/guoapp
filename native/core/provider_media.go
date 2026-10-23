@@ -115,6 +115,21 @@ func (d *Downloader) providerURLCandidates(raw string) []string {
 	return candidates
 }
 
+func huangguoAIPageBelongsToDrama(pageURL, sourceID string) bool {
+	parsed, err := url.Parse(pageURL)
+	if err != nil || parsed.Scheme != "https" || providerSourceForURL(pageURL) != sourceHuangguoAI {
+		return false
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) == 2 && parts[0] == "detail" {
+		return cleanID(parts[1]) == sourceID
+	}
+	if len(parts) >= 2 && parts[0] == "video" {
+		return aiEpisodeKey(pageURL, sourceID) != ""
+	}
+	return false
+}
+
 func (d *Downloader) resolveProviderMedia(ctx context.Context, task Task) (providerMedia, error) {
 	chapter := task.Chapter
 	chapter.Source = canonicalProviderSource(chapter.Source)
@@ -178,6 +193,12 @@ func (d *Downloader) resolveProviderMedia(ctx context.Context, task Task) (provi
 				return providerMedia{}, err
 			}
 			media.Referer = client.host + "/home"
+		}
+	}
+	if chapter.Source == sourceHuangguoAI && chapter.PageURL != "" {
+		source, sourceID, valid := splitProviderDramaID(task.DramaID)
+		if !valid || source != sourceHuangguoAI || !huangguoAIPageBelongsToDrama(chapter.PageURL, sourceID) {
+			return providerMedia{}, fmt.Errorf("黃果 AI 舊分集指向其他作品，已停止播放以免播錯影片；請更新該劇分集資料")
 		}
 	}
 	if chapter.PageURL != "" && (chapter.Source == sourceHuangguoAI || chapter.Source == sourceHuangguoVideo) {
