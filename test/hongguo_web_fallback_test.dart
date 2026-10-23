@@ -10,7 +10,7 @@ void main() {
       'https://hongguoduanju.com/detail?series_id=7615112833881082905');
   });
   test('rejects non-Hongguo sources and untrusted identifiers', () {
-    for (final id in ['../private', '1&next=https://evil.example', 'foo', '','0'*33]) {
+    for (final id in ['../private', '1&next=https://evil.example', 'foo', '',List.filled(33, '0').join()]) {
       expect(officialHongguoDramaUrl(drama('hongguo', id)), isNull);
     }
     expect(officialHongguoDramaUrl(drama('huangguoai', '7615112833881082905')), isNull);
