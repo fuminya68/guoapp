@@ -1,0 +1,58 @@
+name: FFmpeg 8.1.3 Windows ABI smoke
+
+on:
+  push:
+    branches: ['security/ffmpeg-8.1.3']
+    paths:
+      - '.github/workflows/ffmpeg813-abi-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  abi-smoke:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download previous verified FFmpegKit 8.1.2 baseline
+        uses: actions/download-artifact@v4
+        with:
+          name: zhenguojian-windows-x64-hardened
+          run-id: 39939208001
+          github-token: ${{ github.token }}
+          path: baseline
+      - name: Validate baseline and stage pinned 8.1.3 DLLs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Get-ChildItem baseline -Filter 'zhenguojian-0.2.64+71-windows-x64.zip' -File | Select-Object -First 1
+          if (-not $zip) { throw 'Missing baseline binary' }
+          if ((Get-FileHash $zip.FullName -Algorithm SHA256).Hash -ne 'F9A119463529061D5BCD55CA6FBB6130CC10307F1871C42C753613D6FF78946A') {
+            throw 'Baseline hash mismatch'
+          }
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath checked-baseline -Force
+          python scripts/prepare_ffmpeg813_windows.py --output prepared --evidence evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to verify patched FFmpeg 8.1.3 source' }
+          $core = @('avcodec-62.dll','avdevice-62.dll','avfilter-11.dll','avformat-62.dll','avutil-60.dll','swresample-6.dll','swscale-9.dll')
+          foreach ($name in $core) {
+            Copy-Item -LiteralPath (Join-Path 'prepared/bin' $name) -Destination (Join-Path 'checked-baseline' $name) -Force
+          }
+      - name: Load patched FFmpeg and legacy FFmpegKit wrapper on Windows
+        shell: pwsh
+        run: |
+          python scripts/check_ffmpeg813_runtime.py checked-baseline
+          if ($LASTEXITCODE -ne 0) { throw '8.1.3 FFmpegKit DLL ABI incompatible' }
+      - name: Upload binary provenance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg813-abi-smoke-evidence
+          path: evidence
+          if-no-files-found: warn
+          retention-days: 14
