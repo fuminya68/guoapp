@@ -45,12 +45,20 @@ type nativeStreamServer struct {
 	address    string
 	sessions   map[string]*nativeStreamSession
 	server     *http.Server
+	ssrfTransport *http.Transport
 }
 
 func (stream *nativeStreamServer) nativeRequest(request *http.Request) (*http.Response, error) {
-	client := *stream.downloader.client
+	if err := mediaSSRFAllowedURL(request.URL); err != nil {
+		return nil, err
+	}
+	transport := stream.ssrfTransport
+	if transport == nil {
+		transport = newMediaSSRFTransport()
+	}
+	client := mediaSSRFClient(stream.downloader.client, transport)
 	client.Timeout = 0
-	return stream.downloader.doMediaRequestWithClient(request, &client)
+	return stream.downloader.doMediaRequestWithClient(request, client)
 }
 
 var nativePlaylistURI = regexp.MustCompile(`URI="([^"]+)"`)
@@ -60,7 +68,7 @@ func newNativeStreamServer(d *Downloader) (*nativeStreamServer, error) {
 	if err != nil {
 		return nil, errors.New("无法初始化本机播放器")
 	}
-	stream := &nativeStreamServer{downloader: d, address: "http://" + listener.Addr().String(), sessions: map[string]*nativeStreamSession{}}
+	stream := &nativeStreamServer{downloader: d, address: "http://" + listener.Addr().String(), sessions: map[string]*nativeStreamSession{}, ssrfTransport: newMediaSSRFTransport()}
 	server := &http.Server{Handler: http.HandlerFunc(stream.nativeServe), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16384}
 	stream.server = server
 	go func() { _ = server.Serve(listener) }()
@@ -163,6 +171,9 @@ func (stream *nativeStreamServer) nativeRewrite(token string, session *nativeStr
 			}
 			address := parsed.ResolveReference(relative).String()
 			if !isProviderHTTPMediaURL(address) {
+				return ""
+			}
+			if candidate, err := url.Parse(address); err != nil || mediaSSRFAllowedURL(candidate) != nil {
 				return ""
 			}
 			asset := nativeStreamAsset{address: address, contentType: contentType}
@@ -270,6 +281,10 @@ func (stream *nativeStreamServer) nativeServe(writer http.ResponseWriter, reques
 			}
 			http.ServeContent(writer, request, parts[1], time.Time{}, bytes.NewReader(asset.data))
 		}
+		return
+	}
+	if candidate, err := url.Parse(asset.address); err != nil || mediaSSRFAllowedURL(candidate) != nil {
+		http.Error(writer, "拒绝访问本地或内部媒体地址", http.StatusBadGateway)
 		return
 	}
 	upstream, err := http.NewRequestWithContext(ctx, request.Method, asset.address, nil)
