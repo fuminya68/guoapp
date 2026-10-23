@@ -23,4 +23,4 @@ jobs:
           cache-dependency-path: native/go.sum
       - name: Compare known Huangguo video sources without fetching media
         working-directory: native
-        run: go test ./core -run TestHuangguoKnownTitlesCollisionSignatures -count=1 -v -timeout 3m
+        run: go test ./core -run TestHuangguoDetailVideoAnchorOwnership -count=1 -v -timeout 3m
