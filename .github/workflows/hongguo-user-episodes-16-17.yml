@@ -18,4 +18,5 @@ jobs:
           cache-dependency-path: native/go.sum
       - name: Compare user-provided episode URLs and public catalog video IDs
         working-directory: native
-        run: go test ./core -run '^TestHongguoUserEpisode16And17SiteParity$' -count=1 -v -timeout 2m
+        run: go test ./core -run '^TestHongguoServerDeclaredAccessibleEpisodeCount -count=1 -v -timeout 2m
+ -count=1 -v -timeout 2m
