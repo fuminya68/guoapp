@@ -80,7 +80,7 @@ try {
    Start-Sleep -Milliseconds 450
    foreach($evt in @(EventRows $controlStart)){
      $f=Fields $evt
-     if([string]$f['Image'] -notmatch '(?i)\\(?:powershell|pwsh).exe
+     if([string]$f['Image'] -notmatch '(?i)\\(?:powershell|pwsh)\.exe$'){continue}
      if($evt.Id -eq 22 -and $f['QueryName'] -like '*example.com*'){
        $report.positiveDnsControl=$true
      }
