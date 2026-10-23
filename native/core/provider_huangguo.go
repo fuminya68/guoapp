@@ -866,8 +866,8 @@ func huangguoAIDetailFirstEpisode(body, pageURL string) (providerEpisode, bool) 
 }
 
 func parseAIVideoURL(rawHTML, pageURL string) string {
-	if media := parseAIVideoInitialData(rawHTML, pageURL); media != "" {
-		return media
+	if regexp.MustCompile(`(?is)<script\b[^>]*id=["']videoInitialData["']`).MatchString(rawHTML) {
+		return parseAIVideoInitialData(rawHTML, pageURL)
 	}
 	if m := reDataPlaySrc.FindStringSubmatch(rawHTML); len(m) > 1 {
 		if media := normalizeProviderMediaURL(pageURL, m[1]); media != "" {

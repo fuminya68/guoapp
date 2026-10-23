@@ -93,3 +93,10 @@ func TestHuangguoAIRejectsStaleCrossDramaPlaybackTasks(t *testing.T) {
   }
  }
 }
+
+func TestHuangguoAINeverFallsBackToGlobalMediaWhenInitialEpisodeMismatches(t *testing.T) {
+ raw:=`<script id="videoInitialData">{"ep":"1","videoSrc":"https://media.example.test/first.m3u8","epPlaySrcs":{"1":"https://media.example.test/first.m3u8"}}</script>`
+ if got:=parseAIVideoURL(raw,"https://huangguoai.com/video/12/ep-2/");got!="" {
+  t.Fatalf("global regex fallback defeated the episode identity guard: %s",got)
+ }
+}

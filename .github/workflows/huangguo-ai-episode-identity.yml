@@ -30,6 +30,9 @@ jobs:
       - name: Never substitute episode one for a missing episode
         working-directory: native
         run: go test ./core -run TestHuangguoAIInitialDataDoesNotBorrowAnotherEpisode -count=1 -v
+      - name: Avoid regex fallback after an explicit episode identity mismatch
+        working-directory: native
+        run: go test ./core -run TestHuangguoAINeverFallsBackToGlobalMediaWhenInitialEpisodeMismatches -count=1 -v
       - name: Reject cached cross-drama playback tasks
         working-directory: native
         run: go test ./core -run TestHuangguoAIRejectsStaleCrossDramaPlaybackTasks -count=1 -v
