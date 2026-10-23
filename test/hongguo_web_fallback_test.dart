@@ -23,7 +23,7 @@ void main() {
   });
 
   test('in-app top-level navigation only allows trusted HTTPS hosts', () {
-    expect(isTrustedHongguoWebviewNavigation('https://novelquickapp.com/player/123/456'),isTrue);
+    expect(isTrustedHongguoWebviewNavigation('https://hongguoduanju.com/player/123/456'),isTrue);
     expect(isTrustedHongguoWebviewNavigation('https://hongguoduanju.com/detail?series_id=123'),isTrue);
     for (final u in [
       'http://novelquickapp.com/player/123/456',
@@ -46,12 +46,12 @@ void main() {
       ],
     );
     expect(hongguoEpisodeIndexFromWebviewUrl(
-      detail, 'https://novelquickapp.com/player/123/789'
+      detail, 'https://hongguoduanju.com/player/123/789'
     ), 1);
     for (final bad in [
-      'https://novelquickapp.com/player/124/789',
-      'https://novelquickapp.com/player/123/888',
-      'https://novelquickapp.com/player/123/789/extra',
+      'https://hongguoduanju.com/player/124/789',
+      'https://hongguoduanju.com/player/123/888',
+      'https://hongguoduanju.com/player/123/789/extra',
       'https://novelquickapp.com.evil.test/player/123/789',
       'file:///C:/Windows/',
       'https://novelquickapp.com:8443/player/123/789',
@@ -83,16 +83,35 @@ void main() {
     for (final i in [0, 4, 5, 6, 9]) {
       expect(
         publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]),
-        'https://novelquickapp.com/player/7615112833881082905/${1000 + i}',
+        'https://hongguoduanju.com/player/7615112833881082905/${1000 + i}',
       );
       expect(
         hongguoEpisodeIndexFromWebviewUrl(
           detail,
-          'https://novelquickapp.com/player/7615112833881082905/${1000 + i}',
+          'https://hongguoduanju.com/player/7615112833881082905/${1000 + i}',
         ),
         i,
       );
     }
+  });
+
+  test('real episodes 16 and 17 use the working Hongguo portal', () {
+    final show = drama('hongguo', '7697209252699442201');
+    final chapters = [
+      episode('hongguo-cenc://7697250072865541144'),
+      episode('hongguo-cenc://7697249981073198104'),
+    ];
+    final detail = DramaDetail(show, chapters);
+    expect(publicHongguoEpisodeUrl(show, chapters[0]),
+      'https://hongguoduanju.com/player/7697209252699442201/7697250072865541144');
+    expect(publicHongguoEpisodeUrl(show, chapters[1]),
+      'https://hongguoduanju.com/player/7697209252699442201/7697249981073198104');
+    expect(hongguoEpisodeIndexFromWebviewUrl(
+      detail, publicHongguoEpisodeUrl(show, chapters[1])!), 1);
+    expect(hongguoEpisodeIndexFromWebviewUrl(detail,
+      'https://novelquickapp.com/player/7697209252699442201/7697250072865541144'), 0);
+    expect(hongguoEpisodeIndexFromWebviewUrl(detail,
+      'https://hongguoduanju.com.evil.example/player/7697209252699442201/7697250072865541144'), isNull);
   });
 
   test('Windows browser launches only from protected system directory', () {
@@ -121,7 +140,7 @@ void main() {
         drama('hongguo', '7615112833881082905'),
         episode('hongguo-cenc://7615112833881082906'),
       ),
-      'https://novelquickapp.com/player/7615112833881082905/7615112833881082906',
+      'https://hongguoduanju.com/player/7615112833881082905/7615112833881082906',
     );
   });
 

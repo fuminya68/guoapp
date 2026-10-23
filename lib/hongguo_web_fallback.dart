@@ -29,7 +29,7 @@ String? publicHongguoEpisodeUrl(Drama drama, Episode episode) {
   if (!idPattern.hasMatch(seriesId) || !idPattern.hasMatch(videoId)) {
     return null;
   }
-  return 'https://novelquickapp.com/player/$seriesId/$videoId';
+  return 'https://hongguoduanju.com/player/$seriesId/$videoId';
 }
 
 
@@ -66,7 +66,8 @@ int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
   if (!isTrustedHongguoWebviewNavigation(address)) return null;
   final uri = Uri.tryParse(address);
   if (uri == null ||
-      uri.host.toLowerCase() != 'novelquickapp.com' ||
+      !const {'novelquickapp.com', 'hongguoduanju.com'}
+          .contains(uri.host.toLowerCase()) ||
       uri.pathSegments.length != 3 ||
       uri.pathSegments[0] != 'player' ||
       uri.pathSegments[1] != detail.drama.sourceId) {
@@ -75,8 +76,12 @@ int? hongguoEpisodeIndexFromWebviewUrl(DramaDetail detail, String address) {
   final vid = uri.pathSegments[2];
   if (!RegExp(r'^[0-9]{1,32}$').hasMatch(vid)) return null;
   for (var i = 0; i < detail.episodes.length; i++) {
-    if (publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]) ==
-        'https://novelquickapp.com/player/${detail.drama.sourceId}/$vid') {
+    final expected = publicHongguoEpisodeUrl(
+      detail.drama,
+      detail.episodes[i],
+    );
+    if (expected != null &&
+        Uri.parse(expected).pathSegments[2] == vid) {
       return i;
     }
   }
@@ -100,7 +105,7 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
       const uri = new URL(target, window.location.href);
       const parts = uri.pathname.split('/').filter(Boolean);
       return uri.protocol === 'https:' &&
-        uri.hostname === 'novelquickapp.com' &&
+        ['hongguoduanju.com', 'novelquickapp.com'].includes(uri.hostname) &&
         !uri.port && !uri.username && !uri.password &&
         parts.length === 3 && parts[0] === 'player' &&
         parts[1] === seriesId && /^[0-9]{1,32}$/.test(parts[2])
