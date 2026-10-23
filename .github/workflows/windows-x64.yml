@@ -1,4 +1,4 @@
-name: Build Windows x64 (all sources)
+name: Hardened Windows x64 (all sources)
 
 on:
   push:
@@ -6,6 +6,13 @@ on:
       - 'windows-build/**'
     paths:
       - '.github/workflows/windows-x64.yml'
+      - 'lib/**'
+      - 'native/**'
+      - 'test/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'pubspec.lock'
+      - 'pubspec.yaml'
   workflow_dispatch:
 
 permissions:
@@ -16,9 +23,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - name: Resolve exact Dart dependencies
+        run: flutter pub get
+      - name: OSV known-vulnerability scan (Go and Dart)
+        uses: google/osv-scanner-action/osv-scanner-action@7f58dd6750d78fc29a900ba64b1a0f946f62fba4 # v2.6.0
+        with:
+          scan-args: 'scan source --lockfile=pubspec.lock --lockfile=native/go.mod'
+
   windows-x64:
+    needs: dependency-audit
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 110
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -77,6 +102,26 @@ jobs:
         shell: pwsh
         run: flutter pub get
 
+      - name: Flutter pairing trust regression tests
+        shell: pwsh
+        run: flutter test test/lan_security_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+
+      - name: Verify Go modules checksums
+        shell: pwsh
+        working-directory: native
+        run: go mod verify
+
+      - name: Scan reachable Go vulnerabilities
+        shell: pwsh
+        working-directory: native
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          if ($LASTEXITCODE -ne 0) { throw 'govulncheck installation failed' }
+          $scanner = Join-Path (go env GOPATH) 'bin/govulncheck.exe'
+          & $scanner ./...
+          if ($LASTEXITCODE -ne 0) { throw 'govulncheck reported reachable vulnerabilities or scanner failure' }
+
       - name: Build zhenguojian with all sources
         shell: pwsh
         env:
@@ -105,10 +150,37 @@ jobs:
           }
           Get-FileHash $zip -Algorithm SHA256 | Format-List
 
+      - name: Windows Defender scan (fail closed)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = (Get-ChildItem -Path dist/windows -Filter 'zhenguojian-*-windows-x64.zip' | Select-Object -First 1).FullName
+          if (-not $zip) { throw 'Windows package not found' }
+          $destination = Join-Path $env:RUNNER_TEMP 'zhenguojian-defender-scan'
+          Expand-Archive -LiteralPath $zip -DestinationPath $destination -Force
+          $health = Get-MpComputerStatus -ErrorAction Stop
+          if ($health.AntivirusEnabled -ne $true) {
+            throw 'Microsoft Defender is not active: cannot certify build artifact'
+          }
+          Write-Host "Defender definitions: $($health.AntivirusSignatureVersion)"
+          Start-MpScan -ScanType CustomScan -ScanPath $destination -ErrorAction Stop
+          $detections = @(Get-MpThreatDetection -ErrorAction Stop |
+            Where-Object { @($_.Resources | Where-Object { $_ -like "*zhenguojian-defender-scan*" }).Count -gt 0 })
+          if ($detections.Count -ne 0) {
+            $detections | Format-List | Out-String | Write-Host
+            throw 'Microsoft Defender reported malicious content in the Windows bundle'
+          }
+          foreach ($required in @('zhenguojian.exe', 'duanju_core.dll', 'libmpv-2.dll')) {
+            if (-not (Test-Path (Join-Path $destination $required))) {
+              throw "File removed during antivirus scan: $required"
+            }
+          }
+          Write-Host 'Defender custom scan completed without detections'
+
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
-          name: zhenguojian-windows-x64
+          name: zhenguojian-windows-x64-hardened
           path: dist/windows/zhenguojian-*-windows-x64.zip
           if-no-files-found: error
           retention-days: 14
