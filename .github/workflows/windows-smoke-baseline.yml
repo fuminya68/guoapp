@@ -1,0 +1,47 @@
+name: Diagnose packaged Windows smoke against known-good build
+
+on:
+  push:
+    branches: ['security/mpv-windows-integrations']
+    paths: ['.github/workflows/windows-smoke-baseline.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  baseline:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: zhenguojian-windows-x64-ffmpeg813-experimental
+          run-id: 39945353031
+          github-token: ${{ github.token }}
+          path: dist/windows
+      - name: Verify baseline SHA-256 and stage known-good FFmpeg utility
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = 'dist/windows/zhenguojian-0.2.64+71-windows-x64.zip'
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne '9A7AE96001021715D150509C28BB9DEEBCCA45F583397BE1CFBAF45A1DD74A8A') {
+            throw 'Baseline ZIP digest mismatch'
+          }
+          python scripts/prepare_ffmpeg813_windows.py --output prepared --evidence evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot stage pinned FFmpeg tools' }
+          $env:PATH = (Join-Path (Get-Location) 'prepared/tools') + ';' + $env:PATH
+          python scripts/smoke_windows.py --all-sources
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline packaged EXE failed smoke too' }
+      - name: Upload smoke error details
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-windows-smoke-details
+          path: build/windows-package-smoke.json
+          if-no-files-found: warn
