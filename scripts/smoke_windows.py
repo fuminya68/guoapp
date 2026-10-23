@@ -29,15 +29,28 @@ def main():
                         '-i', 'testsrc2=size=160x90:rate=12', '-t', '3',
                         '-c:v', 'libx264', '-threads', '1', str(media)], check=True)
         report = directory / 'result.json'
-        subprocess.run([str(directory / (variant.slug + '.exe')), '--package-smoke', str(report), str(media)],
-                       cwd=directory, check=True, timeout=90)
-        evidence = json.loads(report.read_text(encoding='utf-8'))
-        if evidence.get('ok') is not True:
-            raise SystemExit('Windows 包启动验收未通过。')
+        command = [str(directory / (variant.slug + '.exe')), '--package-smoke', str(report), str(media)]
+        try:
+            process = subprocess.run(command, cwd=directory, check=False,
+                                     timeout=90, capture_output=True, text=True,
+                                     errors='replace')
+        except subprocess.TimeoutExpired as error:
+            print('PACKAGED_EXE_TIMEOUT: ' + str(error), flush=True)
+            raise
+        if process.stdout:
+            print('PACKAGED_EXE_STDOUT:\\n' + process.stdout[-16000:], flush=True)
+        if process.stderr:
+            print('PACKAGED_EXE_STDERR:\\n' + process.stderr[-16000:], flush=True)
         output = root / 'build' / 'windows-package-smoke.json'
         output.parent.mkdir(parents=True, exist_ok=True)
+        if report.is_file():
+            evidence = json.loads(report.read_text(encoding='utf-8'))
+        else:
+            evidence = {'ok': False, 'error': 'Missing report from app', 'exitCode': process.returncode}
         output.write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')
-        print(json.dumps(evidence))
+        print('PACKAGED_EXE_RESULT: ' + json.dumps(evidence, ensure_ascii=False), flush=True)
+        if process.returncode != 0 or evidence.get('ok') is not True:
+            raise SystemExit('Packaged Windows smoke rejected: ' + str(evidence.get('error') or process.returncode))
 
 
 if __name__ == '__main__':
