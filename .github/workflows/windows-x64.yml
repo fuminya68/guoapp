@@ -158,6 +158,40 @@ jobs:
           }
           Get-FileHash $zip -Algorithm SHA256 | Format-List
 
+      - name: Extract compiled bundle for independent native-DLL validation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path dist/security-evidence -Force | Out-Null
+          $zip = Get-ChildItem -Path dist/windows -Filter 'zhenguojian-*-windows-x64.zip' -File | Select-Object -First 1
+          if (-not $zip) { throw 'Windows output ZIP is missing' }
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath dist/security-bundle -Force
+
+      - name: Require FFmpeg DLL ASLR, high-entropy VA and NX
+        shell: pwsh
+        run: |
+          python scripts/check_windows_dll_mitigations.py dist/security-bundle --report dist/security-evidence/ffmpeg-mitigations.csv
+          if ($LASTEXITCODE -ne 0) { throw 'FFmpeg DLL mitigation audit failed' }
+
+      - name: Independently compare mpv, ANGLE and FFmpeg DLLs with upstream releases
+        shell: pwsh
+        run: |
+          if (-not (Get-Command 7z.exe, 7z -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+            choco install 7zip --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw '7-Zip dependency failed' }
+            $env:PATH += ';C:\Program Files\7-Zip'
+          }
+          python scripts/verify_windows_dll_provenance.py dist/security-bundle --evidence dist/security-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Native DLL source provenance verification failed' }
+
+      - name: Upload full native DLL verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-dll-evidence
+          path: dist/security-evidence
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Windows Defender scan (fail closed)
         shell: pwsh
         run: |
