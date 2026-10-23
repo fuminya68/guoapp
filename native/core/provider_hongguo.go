@@ -232,7 +232,7 @@ func (d *Downloader) resolveHongguoWebMedia(ctx context.Context, seriesID, video
 	info, _ := page["video_player_info"].(map[string]any)
 	addresses := hongguoMediaAddresses(info)
 	if len(addresses) == 0 {
-		return providerMedia{}, fmt.Errorf("红果该集未提供公开播放地址，可能需要登录或 App 授权；不会将试看集冒充该集下载")
+		return providerMedia{}, hongguoUnavailableWebPlayback(page)
 	}
 	duration, _ := strconv.ParseFloat(mapString(info, "duration"), 64)
 	media := providerMedia{URL: addresses[0], Referer: d.providerBaseURL(sourceHongguo) + "/", Duration: time.Duration(duration * float64(time.Second))}
@@ -242,6 +242,13 @@ func (d *Downloader) resolveHongguoWebMedia(ctx context.Context, seriesID, video
 		media.Variants = append(media.Variants, variant)
 	}
 	return media, nil
+}
+
+func hongguoUnavailableWebPlayback(page map[string]any) error {
+	if page["protectedPlayback"] == true {
+		return errors.New("紅果此集採用受保護的瀏覽器播放，未提供一般播放器可用的公開串流網址；可嘗試來源網站的指定集數頁面")
+	}
+	return errors.New("紅果該集未提供公開播放地址，可能需要登入或 App 授權；不會將試看集冒充該集下載")
 }
 
 func hongguoDramaFromAny(v any, category string) Drama {
