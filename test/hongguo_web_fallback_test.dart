@@ -70,6 +70,31 @@ void main() {
     expect(hongguoSameSeriesNavigationScript(drama('huangguoai','123')), isNull);
   });
 
+  test('later Hongguo episodes keep exact public-browser URLs', () {
+    final show = drama('hongguo', '7615112833881082905');
+    final chapters = List.generate(
+      10,
+      (i) => Episode({
+        'videoUrl': 'hongguo-cenc://${1000 + i}',
+        'currentEpisode': i + 1,
+      }, i + 1),
+    );
+    final detail = DramaDetail(show, chapters);
+    for (final i in [0, 4, 5, 6, 9]) {
+      expect(
+        publicHongguoEpisodeUrl(detail.drama, detail.episodes[i]),
+        'https://novelquickapp.com/player/7615112833881082905/${1000 + i}',
+      );
+      expect(
+        hongguoEpisodeIndexFromWebviewUrl(
+          detail,
+          'https://novelquickapp.com/player/7615112833881082905/${1000 + i}',
+        ),
+        i,
+      );
+    }
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');

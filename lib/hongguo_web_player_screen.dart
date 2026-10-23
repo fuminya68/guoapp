@@ -37,6 +37,7 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
   late final int _epoch = widget.store.profileEpoch;
   late int _index = widget.initialIndex;
   bool _ready = false;
+  bool _externalBrowserMode = false;
   bool _closed = false;
   String? _error;
   int _generation = 0;
@@ -131,6 +132,19 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
       }
     }
     if (!_permitted || ticket != _generation) return;
+    if (_externalBrowserMode) {
+      // Only a user-selected mode may open the browser automatically when
+      // navigating episodes. The browser retains its own authorized session;
+      // no cookies or account material are accessed by the app.
+      final opened = await openPublicHongguoEpisodeInBrowser(
+        widget.detail.drama,
+        widget.detail.episodes[index],
+      );
+      if (!opened && _permitted && ticket == _generation) {
+        setState(() => _error = '無法在系統瀏覽器開啟這一集。');
+      }
+      return;
+    }
 
     WebviewController? next;
     try {
@@ -222,6 +236,14 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
     }
   }
 
+  Future<void> _toggleBrowserMode() async {
+    if (!_permitted) return;
+    setState(() => _externalBrowserMode = !_externalBrowserMode);
+    // Refresh the current episode into the selected player. When switching
+    // to the system browser, the embedded WebView2 is disposed first.
+    await _navigateToEpisode(_index);
+  }
+
   Future<void> _openExternal() async {
     if (!_permitted || _index >= widget.detail.episodes.length) return;
     final ok = await openPublicHongguoEpisodeInBrowser(
@@ -274,6 +296,16 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
             icon: const Icon(Icons.format_list_numbered),
           ),
           IconButton(
+            key: const ValueKey('hongguo-toggle-system-browser'),
+            tooltip: _externalBrowserMode
+                ? '改回內嵌播放器'
+                : '後續集數使用系統瀏覽器',
+            onPressed: _toggleBrowserMode,
+            icon: Icon(
+              _externalBrowserMode ? Icons.web_rounded : Icons.language_rounded,
+            ),
+          ),
+          IconButton(
             tooltip: '用外部瀏覽器開啟本集',
             onPressed: _openExternal,
             icon: const Icon(Icons.open_in_browser),
@@ -282,7 +314,7 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
       ),
       body: Stack(
         children: [
-          if (_ready && _controller != null)
+          if (!_externalBrowserMode && _ready && _controller != null)
             Positioned.fill(
               child: Webview(
                 _controller!,
@@ -290,7 +322,36 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
                     WebviewPermissionDecision.deny,
               ),
             ),
-          if (!_ready && _error == null)
+          if (_externalBrowserMode && _error == null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.open_in_browser_rounded, size: 48),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '目前使用系統瀏覽器觀看紅果',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '上一集、下一集及選擇集數會在你既有的瀏覽器中開啟。'
+                      '瀏覽器的登入狀態不會匯入真果鑑。',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: _toggleBrowserMode,
+                      icon: const Icon(Icons.web_rounded),
+                      label: const Text('改回內嵌播放器'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (!_externalBrowserMode && !_ready && _error == null)
             const Center(child: CircularProgressIndicator()),
           if (_error != null)
             Positioned.fill(

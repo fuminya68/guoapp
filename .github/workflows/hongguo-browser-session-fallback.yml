@@ -1,0 +1,28 @@
+name: Hongguo authorized browser session fallback
+on:
+  push:
+    branches:
+      - security/hongguo-browser-session-fallback-20261024
+    paths:
+      - lib/hongguo_web_player_screen.dart
+      - test/hongguo_web_fallback_test.dart
+      - .github/workflows/hongguo-browser-session-fallback.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flutter-browser-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze browser-mode toggle and episode selection
+        run: dart analyze lib/hongguo_web_player_screen.dart test/hongguo_web_fallback_test.dart
+      - name: Verify episode 6+ source identity and browser URL allowlist
+        run: flutter test test/hongguo_web_fallback_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
