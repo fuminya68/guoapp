@@ -98,7 +98,8 @@ class _HongguoWebPlayerScreenState extends State<HongguoWebPlayerScreen> {
       await controller.setDefaultContextMenusEnabled(false);
 
       _urlSubscription = controller.url.listen((url) {
-        if (_closed || isTrustedHongguoWebviewNavigation(url)) return;
+        if (_closed || url == 'about:blank' ||
+            isTrustedHongguoWebviewNavigation(url)) return;
         // Refuse an unexpected top-level redirect instead of following it.
         unawaited(controller!.stop());
         if (mounted) {
