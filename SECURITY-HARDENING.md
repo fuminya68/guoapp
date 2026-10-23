@@ -49,6 +49,13 @@ verification, or independent review of the bundled native media DLLs.
   material from its history; deletion in this fork cannot revoke leaked keys.
 - Verify reproducibility of Dart lockfile resolution. In this build, the
   runner executes `flutter pub get` to resolve a stale upstream lockfile.
+- **Unresolved SSRF surface:** `isProviderHTTPMediaURL` currently allows
+  arbitrary HTTP(S) hosts. `nativeStreamServer.nativeRewrite` can transform
+  untrusted HLS media/segment URLs into proxied requests, and redirects or DNS
+  resolution can target local or private-network endpoints. A proper fix must
+  reject private/loopback/link-local destinations at dial time (including
+  redirect and DNS rebinding cases), without breaking intentional local media
+  fixtures. Do not mark the app production-safe until this path is addressed.
 - Audit the origin, maintenance and known vulnerabilities of pinned
   libmpv/FFmpeg/ANGLE Windows native libraries. SHA-256 pinning proves byte
   identity, not that downloaded bytes are benign.
