@@ -112,13 +112,14 @@ void main() {
       () => find.text(_WindowsFixtureRepository.drama.title).evaluate().isNotEmpty,
       'catalog load',
     );
+    // Home-screen drama tiles intentionally start playback directly. The
+    // detail-only 'episode-1' key is not part of that navigation route.
     await tester.tap(find.text(_WindowsFixtureRepository.drama.title).first);
+    await until(() => find.byType(Video).evaluate().isNotEmpty, 'direct player navigation');
     await until(
-      () => find.byKey(const ValueKey('episode-1')).evaluate().isNotEmpty,
-      'detail episode list',
+      () => find.byKey(const ValueKey('play-episode-2')).evaluate().isNotEmpty,
+      'desktop player episode controls',
     );
-    await tester.tap(find.byKey(const ValueKey('episode-1')));
-    await until(() => find.byType(Video).evaluate().isNotEmpty, 'player widget');
     final player = tester.widget<Video>(find.byType(Video)).controller.player;
     await player.setVolume(0);
 
