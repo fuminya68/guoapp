@@ -133,6 +133,18 @@ String? hongguoSameSeriesNavigationScript(Drama drama) {
 
 /// The user's ordinary browser uses the Hongguo website portal, which can
 /// retain its *own* legitimate access session. Never copy credentials.
+/// Use the website's normal first-party route for the embedded browser mode.
+/// Authorization remains entirely owned by the website. No unlock is inferred.
+String? hongguoWebviewEpisodeUrl(
+  Drama drama,
+  Episode episode, {
+  required bool useOfficialWebsite,
+}) {
+  return useOfficialWebsite
+      ? hongguoEpisodeUrlForSystemBrowser(drama, episode)
+      : publicHongguoEpisodeUrl(drama, episode);
+}
+
 String? hongguoEpisodeUrlForSystemBrowser(Drama drama, Episode episode) {
   final embedded = publicHongguoEpisodeUrl(drama, episode);
   if (embedded == null) return null;

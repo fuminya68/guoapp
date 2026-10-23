@@ -118,6 +118,21 @@ void main() {
       drama('huangguoai','7697209252699442201'), chapters[0]), isNull);
   });
 
+  test('official embedded mode and old direct mode stay distinct', () {
+    final show = drama('hongguo', '7697209252699442201');
+    final ep6 = episode('hongguo-cenc://7697250072865541144');
+    expect(hongguoWebviewEpisodeUrl(show, ep6, useOfficialWebsite: true),
+      'https://hongguoduanju.com/player/7697209252699442201/7697250072865541144');
+    expect(hongguoWebviewEpisodeUrl(show, ep6, useOfficialWebsite: false),
+      'https://novelquickapp.com/player/7697209252699442201/7697250072865541144');
+    expect(officialHongguoDramaUrl(show),
+      'https://hongguoduanju.com/detail?series_id=7697209252699442201');
+    for (final source in ['huangguoai', 'evil']) {
+      expect(hongguoWebviewEpisodeUrl(drama(source,'7697209252699442201'),
+        ep6, useOfficialWebsite: true), isNull);
+    }
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');
