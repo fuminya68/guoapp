@@ -1,0 +1,29 @@
+name: Hongguo official-site WebView2 mode regressions
+on:
+  push:
+    branches:
+      - security/hongguo-native-site-session-20261024
+    paths:
+      - lib/hongguo_web_player_screen.dart
+      - lib/hongguo_web_fallback.dart
+      - test/hongguo_web_fallback_test.dart
+      - .github/workflows/hongguo-native-site-mode.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  session-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Check official site-mode and legacy mode code
+        run: dart analyze lib/hongguo_web_player_screen.dart lib/hongguo_web_fallback.dart test/hongguo_web_fallback_test.dart
+      - name: Verify episode 6, 16 and 17 exact URLs and safe domain selection
+        run: flutter test test/hongguo_web_fallback_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
