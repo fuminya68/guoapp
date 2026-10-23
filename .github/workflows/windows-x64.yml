@@ -132,6 +132,13 @@ jobs:
           go test ./core -run '^TestMediaSSRF' -count=1
           if ($LASTEXITCODE -ne 0) { throw 'SSRF security regression tests failed' }
 
+      - name: Hongguo App empty-response AI/comic fallback regression tests (Go)
+        shell: pwsh
+        working-directory: native
+        run: |
+          go test ./core -run '^Test(HongguoWebCategory|RecoverHongguo)' -count=1 -v
+          if ($LASTEXITCODE -ne 0) { throw 'Hongguo AI drama fallback regression tests failed' }
+
       - name: Scan reachable Go vulnerabilities
         shell: pwsh
         working-directory: native
