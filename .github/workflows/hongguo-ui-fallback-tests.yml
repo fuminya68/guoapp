@@ -14,6 +14,8 @@ on:
       - test/hongguo_web_fallback_test.dart
       - test/playback_volume_test.dart
       - test/downloads_test.dart
+      - native/core/provider_hongguo.go
+      - native/core/provider_hongguo_protected_playback_test.go
   workflow_dispatch:
 
 permissions:
@@ -35,3 +37,16 @@ jobs:
         run: flutter test test/hongguo_web_fallback_test.dart test/playback_volume_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
       - name: Test Traditional Chinese download picker selection
         run: flutter test test/downloads_test.dart --plain-name 'detail download picker handles VIP, quality' --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+
+  hongguo-protected-playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Reject raw media for protected browser playback without claiming login
+        working-directory: native
+        run: go test ./core -run '^TestHongguoWebProtectedPlaybackStatus$' -count=1 -v
