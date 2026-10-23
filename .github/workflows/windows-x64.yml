@@ -237,12 +237,12 @@ jobs:
           }
           Write-Host 'Defender custom scan completed without detections'
 
-      - name: Verify packaged Windows EXE, native playback and remux
+      - name: Verify packaged EXE, native media open and remux
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           python scripts/smoke_windows.py --all-sources
-          if ($LASTEXITCODE -ne 0) { throw 'Packaged Windows application failed startup / MP4 decode / real remux smoke' }
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged Windows application failed startup / mpv headless open / real remux smoke' }
           Copy-Item build/windows-package-smoke.json dist/security-evidence/windows-package-smoke.json -Force
 
       - name: Windows GUI integration (catalog, MP4, HLS, episode switching)
