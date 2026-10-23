@@ -65,7 +65,7 @@ func TestHongguoPublicPlayerEndpointAI(t *testing.T) {
    protect:=page["protectedPlayback"]
    mediaListing:=anyList(page["videoList"])
    t.Logf("ACCESS sample=%d seo_available=%v protected_type=%T protected_flag=%v pc_login_required=%v pc_authenticated_playback=%v encrypted_browser_allowed=%v video_list_len=%d",
-    index+1,seo["available"],protect,protect,reqData["pcLoginRequired"],reqData["pcAuthenticatedPlayback"],reqData["encryptedBrowserAllowed"],len(mediaListing))
+    index+1,seo["available"],protect,protect==true,reqData["pcLoginRequired"],reqData["pcAuthenticatedPlayback"],reqData["encryptedBrowserAllowed"],len(mediaListing))
    info:=nestedMap(page,"video_player_info")
    urls:=hongguoMediaAddresses(info)
    validIDs:=mapString(page,"vid")==videoID && mapString(page,"series_id")==drama.SourceID
