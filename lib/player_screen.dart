@@ -92,6 +92,8 @@ class _PlayerScreenState extends State<PlayerScreen>
   String? _savedProgressKey;
   final _health = PlaybackHealth();
   Timer? _saveTimer;
+  Timer? _volumeSaveTimer;
+  double? _pendingVolume;
   Timer? _healthTimer;
   Timer? _errorTimer;
   Timer? _pictureInPictureExitTimer;
@@ -146,6 +148,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _enhancement.supported ? _enhancement : null;
   PlaybackPreferences get _preferences => PlaybackPreferences(
     speed: _speed,
+    volume: _player.state.volume,
     quality: _requestedQuality,
     autoAdvance: _autoAdvance,
     danmaku: _danmakuEnabled,
@@ -300,6 +303,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         }
       }),
     );
+    _subscriptions.add(_player.stream.volume.listen(_recordVolume));
+    unawaited(_player.setVolume(preferences.volume));
     _saveTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) => _saveProgress(),
@@ -1184,6 +1189,23 @@ class _PlayerScreenState extends State<PlayerScreen>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _recordVolume(double volume) {
+    if (_closed || widget.store.profileEpoch != _profileEpoch || !volume.isFinite) return;
+    _pendingVolume = volume.clamp(0.0, 100.0).toDouble();
+    _volumeSaveTimer?.cancel();
+    _volumeSaveTimer = Timer(const Duration(milliseconds: 250), _flushVolume);
+  }
+
+  void _flushVolume() {
+    _volumeSaveTimer?.cancel();
+    final volume = _pendingVolume;
+    _pendingVolume = null;
+    if (volume == null || widget.store.locked || widget.store.profileEpoch != _profileEpoch) return;
+    unawaited(widget.store.setPlaybackPreferences(
+      widget.store.playbackPreferences.copyWith(volume: volume),
+    ).catchError((Object _) {}));
+  }
+
   Future<void> _setPreferences(PlaybackPreferences preferences) async {
     if (_closed || widget.store.profileEpoch != _profileEpoch) {
       throw StateError('当前用户已变更');
@@ -1459,6 +1481,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _generation++;
     WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
+    _flushVolume();
     _healthTimer?.cancel();
     _errorTimer?.cancel();
     _pictureInPictureExitTimer?.cancel();

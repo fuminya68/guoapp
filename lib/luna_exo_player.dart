@@ -280,6 +280,7 @@ class LunaExoPlayer implements Player {
     }
 
     _controller = c;
+    await c.setVolume(state.volume / 100.0);
     final dur = c.value.duration;
     final w = c.value.size.width.round();
     final h = c.value.size.height.round();
