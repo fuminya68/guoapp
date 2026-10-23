@@ -1,0 +1,110 @@
+name: Build Windows x64 (all sources)
+
+on:
+  push:
+    branches:
+      - 'windows-build/**'
+    paths:
+      - '.github/workflows/windows-x64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+
+      - name: Install MinGW-w64 compiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install mingw --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Chocolatey mingw install failed: $LASTEXITCODE" }
+          $candidates = @(
+            'C:\ProgramData\mingw64\mingw64\bin',
+            'C:\ProgramData\mingw64\bin',
+            'C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin',
+            'C:\msys64\mingw64\bin'
+          )
+          $gcc = $null
+          foreach ($dir in $candidates) {
+            if (Test-Path (Join-Path $dir 'gcc.exe')) {
+              $gcc = Join-Path $dir 'gcc.exe'
+              break
+            }
+          }
+          if (-not $gcc) {
+            $existing = Get-Command x86_64-w64-mingw32-gcc, gcc -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($existing) { $gcc = $existing.Source }
+          }
+          if (-not $gcc) { throw 'MinGW-w64 x64 gcc not found' }
+          $bin = Split-Path $gcc -Parent
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $gcc --version | Select-Object -First 1
+
+      - name: Enable Flutter Windows support
+        shell: pwsh
+        run: flutter config --enable-windows-desktop
+
+      - name: Build zhenguojian with all sources
+        shell: pwsh
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+          GOSUMDB: sum.golang.org
+        run: python scripts/build_windows.py --all-sources
+
+      - name: Verify Windows ZIP and bundled executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $line = Get-Content pubspec.yaml | Where-Object { $_ -match '^version:\s*\S+' } | Select-Object -First 1
+          if (-not $line) { throw 'Missing app version' }
+          $version = ($line -replace '^version:\s*', '').Trim()
+          $zip = "dist/windows/zhenguojian-$version-windows-x64.zip"
+          if (-not (Test-Path $zip)) { throw "Missing $zip" }
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip).Path)
+          try {
+            $entries = @($archive.Entries | ForEach-Object { $_.FullName })
+            foreach ($file in @('zhenguojian.exe','duanju_core.dll','flutter_windows.dll','libffmpegkit.dll','libmpv-2.dll','data/icudtl.dat','data/app.so')) {
+              if ($entries -notcontains $file) { throw "ZIP is missing $file" }
+            }
+          } finally {
+            $archive.Dispose()
+          }
+          Get-FileHash $zip -Algorithm SHA256 | Format-List
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhenguojian-windows-x64
+          path: dist/windows/zhenguojian-*-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 14
