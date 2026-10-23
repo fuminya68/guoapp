@@ -71,6 +71,8 @@ class LanController extends ChangeNotifier with WidgetsBindingObserver {
   LanConnection? connection;
   LanPlaybackHost? playbackHost;
   Future<void> Function(LanIncomingPlayback)? openPlayback;
+  /// The receiver must expressly approve a first-time peer.
+  Future<bool> Function(LanPeer peer)? confirmPairing;
   String? error;
   String discoveryMessage = '';
   String syncMessage = '尚未同步';
@@ -646,15 +648,13 @@ class LanController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     try {
       final previous = remembered;
-      final peer = previous == null
-          ? (_peers.length == 1 ? _peers.single : null)
-          : _peers.where((peer) => peer.id == previous.id).firstOrNull ??
-                previous;
-      if (peer == null) return;
-      if (previous == null &&
-          local!.id.compareTo(peer.id) > 0 &&
-          DateTime.now().difference(_scanStarted) < const Duration(seconds: 7))
-        return;
+      // Never initiate a first-time pairing just because one device was found.
+      // Automatic reconnect is allowed only for an explicitly trusted pin.
+      if (previous == null) return;
+      final peer =
+          _peers.where((candidate) => candidate.id == previous.id).firstOrNull ??
+          previous;
+      if (!lanPeerTrusted(settings['pins'], peer)) return;
       await connect(peer, automatic: true);
     } catch (failure) {
       error = failure.toString();
@@ -680,6 +680,24 @@ class LanController extends ChangeNotifier with WidgetsBindingObserver {
     if (peer.id != event['peerId'] || peer.pin != event['pin'])
       throw StateError('设备身份不一致');
     _checkPin(peer);
+    // Certificate pinning prevents identity changes, but a first-time peer
+    // has no existing trust anchor. Fail closed if the user cannot approve.
+    if (!lanPeerTrusted(settings['pins'], peer)) {
+      final approval = confirmPairing;
+      if (approval == null ||
+          !await approval(peer).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => false,
+          )) {
+        throw StateError('接收端未批准新设备配对');
+      }
+      if (_disposed || !receiving || store.locked ||
+          store.profileEpoch != _sessionEpoch) {
+        throw StateError('接收端已关闭或用户已变更');
+      }
+      // Re-check for a changed identity while the dialog was displayed.
+      _checkPin(peer);
+    }
     if (body['expectedAccount'] != null &&
         body['expectedAccount'] != store.lanDocument.replica) {
       throw StateError('对方切换了用户，请重新选择设备');
