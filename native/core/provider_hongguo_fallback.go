@@ -2,6 +2,7 @@ package core
 
 import (
     "context"
+    "errors"
     "fmt"
     "strconv"
 )
@@ -32,4 +33,26 @@ func (d *Downloader) fetchHongguoWebCatalogCategory(ctx context.Context, categor
         return nil, 0, fmt.Errorf("红果网页分类页码无效：%d", page)
     }
     return d.fetchHongguoCategoryPage(ctx, route+"?page="+strconv.Itoa(page), label)
+}
+
+type hongguoWebCatalogFetch func(context.Context, string, int) ([]Drama, int, error)
+
+// If the app catalogue has failed, prefer a nonempty successful web result.
+// Preserve the original failure when web fallback is inaccessible or empty,
+// so the UI reports an actionable error rather than a false empty catalogue.
+func recoverHongguoAppCatalog(
+    ctx context.Context,
+    category string,
+    page int,
+    appError error,
+    fetch hongguoWebCatalogFetch,
+) ([]Drama, int, error) {
+    items, totalPages, err := fetch(ctx, category, page)
+    if err != nil {
+        return nil, 0, errors.Join(appError, fmt.Errorf("红果网页目录备援失败: %w", err))
+    }
+    if len(items) == 0 {
+        return nil, 0, errors.Join(appError, errors.New("红果网页目录备援未返回剧集"))
+    }
+    return items, totalPages, nil
 }
