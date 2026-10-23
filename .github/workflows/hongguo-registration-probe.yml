@@ -1,0 +1,26 @@
+name: Hongguo anonymous device registration compatibility
+on:
+  push:
+    branches:
+      - diagnostics/hongguo-anonymous-registration-20261024
+    paths:
+      - native/core/hongguo_device_register_probe_test.go
+      - .github/workflows/hongguo-registration-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  anonymous-device:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Probe one anonymous registration against fixed first-party endpoint
+        working-directory: native
+        run: go test ./core -run '^TestHongguoAnonymousDeviceRegistrationCompatibility$' -count=1 -v -timeout 2m
