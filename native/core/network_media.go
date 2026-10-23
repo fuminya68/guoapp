@@ -182,7 +182,14 @@ func (d *Downloader) fetchMediaPlaylist(ctx context.Context, address, referer st
 		return "", "", err
 	}
 	request.Header.Set("Referer", referer)
-	response, err := d.doMediaRequest(request)
+	// Playlists can be supplied by untrusted provider pages. Resolve and
+	// pin a public IP at the socket, including every redirect target.
+	if err := mediaSSRFAllowedURL(request.URL); err != nil {
+		return "", "", err
+	}
+	secure := newMediaSSRFTransport()
+	defer secure.CloseIdleConnections()
+	response, err := d.doMediaRequestWithClient(request, mediaSSRFClient(d.client, secure))
 	if err != nil {
 		return "", "", err
 	}
