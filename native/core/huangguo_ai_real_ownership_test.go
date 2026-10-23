@@ -39,7 +39,7 @@ func TestHuangguoAIRealEpisodeOwnershipLive(t *testing.T) {
   if chapterEpisodeNumber(first,1)!=1 {
     t.Fatalf("first episode omitted for series %s: first=%s",sample.id,first.ID)
   }
-  if sample.id!="417" && !strings.HasSuffix(first.ID,":ep-1") {
+  if !strings.HasSuffix(first.ID,":ep-1") && !strings.HasSuffix(first.ID,":1") {
     t.Fatalf("the published first episode was not recovered for series %s: first=%s",sample.id,first.ID)
   }
 
