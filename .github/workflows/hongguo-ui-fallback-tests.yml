@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - security/hongguo-verified-fallback-20261024
+      - security/hongguo-public-episode-fallback-20261024
     paths:
       - .github/workflows/hongguo-ui-fallback-tests.yml
       - lib/hongguo_web_fallback.dart
