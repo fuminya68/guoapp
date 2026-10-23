@@ -61,3 +61,41 @@ func TestHongguoUserEpisode16And17SiteParity(t *testing.T) {
  }
  fmt.Println("DIAGNOSTIC_COMPLETED")
 }
+
+func TestHongguoServerDeclaredAccessibleEpisodeCount(t *testing.T) {
+ const seriesID="7697209252699442201"
+ ctx,cancel:=context.WithTimeout(context.Background(),100*time.Second)
+ defer cancel()
+ engine,err:=newNativeEngine(t.TempDir())
+ if err!=nil {t.Fatal(err)}
+ t.Cleanup(engine.downloads.close)
+ _,chapters,err:=engine.downloader.fetchHongguoWebChapters(ctx,seriesID)
+ if err!=nil{t.Fatal(err)}
+ for _,i:=range []int{1,5,6,16,17} {
+  vid:=strings.TrimPrefix(chapters[i-1].VideoURL,"hongguo-cenc://")
+  for _,host:=range []string{"hongguoduanju.com","novelquickapp.com"} {
+   address:="https://"+host+"/player/"+seriesID+"/"+vid
+   req,e:=http.NewRequestWithContext(ctx,"GET",address,nil)
+   if e!=nil{t.Fatal(e)}
+   req.Header.Set("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36")
+   response,e:=engine.downloader.doCatalogRequestWithTimeout(req,12*time.Second)
+   if e!=nil{t.Logf("META episode=%d host=%s transport=%v",i,host,e);continue}
+   body,_:=io.ReadAll(io.LimitReader(response.Body,1<<20));response.Body.Close()
+   if response.StatusCode!=200{t.Logf("META episode=%d host=%s status=%d",i,host,response.StatusCode);continue}
+   data:=routerLoaderMap(parseRouterData(string(body)),"player_","player_page")
+   detail:=nestedMap(data,"seriesDetail")
+   social:=nestedMap(data,"episodeSocialInfo")
+   seo:=nestedMap(data,"publicVideoSeo")
+   requested:=nestedMap(data,"req")
+   t.Logf("META episode=%d host=%s page_vid_episode_1=%v exact_vid=%v available_cnt=%q episode_cnt=%q has_accessible_field=%v protected=%v login_required=%v page_ok=%v social_lock_key=%v seo_available=%v",i,host,
+    mapString(data,"vid")==strings.TrimPrefix(chapters[0].VideoURL,"hongguo-cenc://"),
+    mapString(data,"vid")==vid,
+    mapString(detail,"accessible_episode_cnt","accessibleEpisodeCnt"),
+    mapString(detail,"episode_cnt","episode_count","total_episode_cnt"),
+    detail["accessible_episode_cnt"]!=nil || detail["accessibleEpisodeCnt"]!=nil,
+    data["protectedPlayback"],requested["pcLoginRequired"],data["isSuccess"],
+    social["is_locked"]!=nil || social["isLocked"]!=nil,
+    seo["available"])
+  }
+ }
+}
