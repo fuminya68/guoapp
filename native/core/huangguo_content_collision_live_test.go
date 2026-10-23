@@ -6,6 +6,7 @@ import (
  "fmt"
  "strings"
  "net/url"
+ "regexp"
  "testing"
  "time"
 )
@@ -98,6 +99,35 @@ func TestHuangguoKnownTitlesCollisionSignatures(t *testing.T) {
    targetHost:=""
    if media!="" {digest:=sha256.Sum256([]byte(media));hashed=fmt.Sprintf("%x",digest[:6]);if parsed,e:=url.Parse(media);e==nil{targetHost=parsed.Hostname()}}
    t.Logf("TITLE_ID=%s title=%q EP=%d PAGE=%q MEDIA_METHOD=%s MEDIA_HOST=%q MEDIA_FINGERPRINT=%s HAS_INITIAL=%v",item.id,item.title,eindex+1,episode.Key,category,targetHost,hashed,strings.Contains(rawEpisode,"videoInitialData"))
+  }
+ }
+}
+
+func TestHuangguoDetailVideoAnchorOwnership(t *testing.T) {
+ ctx,cancel:=context.WithTimeout(context.Background(),45*time.Second)
+ defer cancel()
+ engine,err:=newNativeEngine(t.TempDir())
+ if err!=nil{t.Fatal(err)}
+ t.Cleanup(engine.downloads.close)
+ classExpr:=regexp.MustCompile(`(?is)class=["']([^"']+)["']`)
+ for _,id:=range []string{"12","117","417"} {
+  page:="https://huangguoai.com/detail/"+id+"/"
+  raw,err:=engine.downloader.fetchProviderText(ctx,page,"https://huangguoai.com/")
+  if err!=nil{t.Fatalf("detail %s: %v",id,err)}
+  links:=reAIEpisodeLink.FindAllStringSubmatchIndex(raw,-1)
+  t.Logf("DETAIL_PAGE id=%s all_video_anchors=%d",id,len(links))
+  for index,m:=range links {
+   if index>=12{break}
+   href:=raw[m[2]:m[3]]
+   block:=raw[m[0]:m[1]]
+   start:=m[0]-420
+   if start<0{start=0}
+   classes:=classExpr.FindAllStringSubmatch(raw[start:m[0]],-1)
+   parent:=""
+   if len(classes)>0{parent=classes[len(classes)-1][1]}
+   title:=cleanText(block)
+   if len(title)>55{title=title[:55]}
+   t.Logf("ANCHOR id=%s index=%d href=%q title=%q class=%q parent=%q",id,index+1,href,title,extractAttr(block,"class"),parent)
   }
  }
 }
