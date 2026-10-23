@@ -23,4 +23,5 @@ jobs:
           cache-dependency-path: native/go.sum
       - name: Probe text-only Huangguo catalogue titles detail IDs and distinct episode URLs
         working-directory: native
-        run: go test ./core -run '^TestHuangguoLiveCatalogDetailIdentityDiagnostics$' -count=1 -v -timeout 3m
+        run: go test ./core -run '^TestHuangguo(LiveCatalogDetailIdentityDiagnostics|KnownTitlesCollisionSignatures) -count=1 -v -timeout 3m
+ -count=1 -v -timeout 3m
