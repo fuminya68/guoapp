@@ -25,7 +25,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: zhenguojian-windows-x64-hardened
-          run-id: 39924870813
+          run-id: 39939208001
           github-token: ${{ github.token }}
           path: downloaded-artifact
 
@@ -35,7 +35,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $file = Get-ChildItem downloaded-artifact -Filter 'zhenguojian-0.2.64+71-windows-x64.zip' -File | Select-Object -First 1
           if (-not $file) { throw 'The pinned Windows ZIP was not downloaded' }
-          $expected = '5BE930564B114266920A658DA11BFE1C2E6D29EA5F6F524CDB6594B53D48C156'
+          $expected = 'F9A119463529061D5BCD55CA6FBB6130CC10307F1871C42C753613D6FF78946A'
           $actual = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
           if ($actual -ne $expected) { throw "Windows ZIP SHA-256 mismatch: $actual" }
           New-Item -ItemType Directory -Path evidence -Force | Out-Null
