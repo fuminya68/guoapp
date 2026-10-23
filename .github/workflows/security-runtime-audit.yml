@@ -1,0 +1,79 @@
+name: Windows behavioral security and network attack audit
+
+on:
+  push:
+    branches:
+      - 'security/runtime-network-audit-v1'
+    paths:
+      - '.github/workflows/security-runtime-audit.yml'
+      - 'scripts/audit_windows_runtime.ps1'
+      - 'native/core/network_media_redirect.go'
+      - 'native/core/network_media_redirect_test.go'
+      - 'native/core/network_media.go'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  network-security:
+    name: Adversarial redirect/token tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Test off-origin token exfil and SSRF guards
+        working-directory: native
+        run: |
+          set -euo pipefail
+          go test ./core -run 'TestPlaybackPreviewToken|TestMediaSSRF' -count=1 -v
+      - name: Analyze reachable Go vulnerabilities after changes
+        working-directory: native
+        run: |
+          set -euo pipefail
+          go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
+  runtime:
+    name: Windows disposable-VM-like runtime snapshot
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get pinned previously-audited Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: zhenguojian-windows-x64-mpv20261021-integration
+          run-id: 39956664273
+          github-token: ${{ github.token }}
+          path: baseline
+      - name: Verify archived baseline and stage EXE
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Get-ChildItem baseline -File -Filter 'zhenguojian-0.2.64+71-windows-x64.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'Expected audited Windows bundle is absent' }
+          $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash
+          $expected = '5838900BCD7540F671C0E8B5314762DAA0DB6DA1076C8FDA764BB02EC0CBF8C9'
+          if ($hash -ne $expected) { throw "Audited baseline hash mismatch: $hash" }
+          New-Item -Path evidence -ItemType Directory -Force | Out-Null
+          "baseline run=39956664273; sha256=$hash" | Set-Content evidence/source.txt
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath audited-app -Force
+          if (-not (Test-Path audited-app/zhenguojian.exe)) { throw 'EXE missing' }
+      - name: Observe disposable application launch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./scripts/audit_windows_runtime.ps1 -Executable audited-app/zhenguojian.exe -ReportPath evidence/windows-behavior.json -DurationSeconds 16
+      - name: Upload behavioral audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-security-observations
+          path: evidence
+          if-no-files-found: error
+          retention-days: 14
