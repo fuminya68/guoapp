@@ -64,6 +64,12 @@ class LanPeer {
   };
 }
 
+/// Unknown or changed device identities are never silently trusted.
+bool lanPeerTrusted(Object? savedPins, LanPeer peer) {
+  if (savedPins is! Map) return false;
+  return savedPins[peer.id] == peer.pin;
+}
+
 class LanConnection {
   LanConnection({
     required this.peer,
