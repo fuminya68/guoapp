@@ -16,19 +16,30 @@ import zipfile
 
 ARCHIVES = (
     {
+        "name": "ffmpeg813",
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-22-13-06/ffmpeg-n8.1.3-23-g5c4f5744cd-win64-gpl-shared-8.1.zip",
+        "sha256": "da8e09a49faf8eb45dd41bf11d04ab49816df42b72c0850c65843a31f81d2b70",
+        "suffix": ".zip",
+        "dlls": (
+            "avcodec-62.dll", "avdevice-62.dll", "avfilter-11.dll",
+            "avformat-62.dll", "avutil-60.dll", "swresample-6.dll",
+            "swscale-9.dll",
+        ),
+    },
+    {
         "name": "ffmpegkit",
         "url": "https://github.com/sk3llo/ffmpeg_kit_flutter/releases/download/8.1.2-min-gpl/ffmpeg-kit-windows-x86_64-min-gpl-8.1.2.zip",
         "sha256": "c3a69388f32ff86e4622baada470d2acc55d577a51b6ec15b68560c1f1b6e37b",
         "suffix": ".zip",
         "dlls": (
-            "avcodec-62.dll", "avdevice-62.dll", "avfilter-11.dll",
-            "avformat-62.dll", "avutil-60.dll", "libbz2-1.dll",
+              
+              "libbz2-1.dll",
             "libffmpegkit.dll", "libfftw3-3.dll", "libgcc_s_seh-1.dll",
             "libgomp-1.dll", "libiconv-2.dll", "liblzma-5.dll",
             "librubberband-2.dll", "libsamplerate-0.dll",
             "libstdc++-6.dll", "libva.dll", "libva_win32.dll",
             "libvidstab.dll", "libwinpthread-1.dll", "libx264-165.dll",
-            "libx265-216.dll", "swresample-6.dll", "swscale-9.dll",
+            "libx265-216.dll",  
             "xvidcore.dll", "zlib1.dll",
         ),
     },
