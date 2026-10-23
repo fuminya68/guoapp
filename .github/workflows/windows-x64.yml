@@ -239,7 +239,7 @@ jobs:
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
-          name: zhenguojian-windows-x64-hardened
+          name: zhenguojian-windows-x64-ffmpeg813-experimental
           path: dist/windows/zhenguojian-*-windows-x64.zip
           if-no-files-found: error
           retention-days: 14
