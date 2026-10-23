@@ -14,6 +14,8 @@ import (
  "fmt"
  "io"
  "net/http"
+ "net/http/cookiejar"
+ "net/url"
  "regexp"
  "strings"
  "testing"
@@ -109,4 +111,46 @@ func TestHongguoAnonymousDeviceRegistrationCompatibility(t *testing.T) {
  t.Logf("REGISTER HTTP=%d RESPONSE_BYTES=%d JSON_VALID=%v DEVICE_ID_ISSUED=%v SET_COOKIE_COUNT=%d",
   response.StatusCode,len(content),err==nil,valid,len(response.Header.Values("Set-Cookie")))
  if !valid {t.Fatal("anonymous registration was not accepted; no credentials retained")}
+ device:=fmt.Sprint(parsed["device_id_str"])
+ install:=fmt.Sprint(parsed["install_id_str"])
+ if device=="<nil>" {device=fmt.Sprint(parsed["device_id"])}
+ if install=="<nil>" {install=fmt.Sprint(parsed["install_id"])}
+ hc:=engine.downloader.hongguoClient()
+ hc.mu.Lock()
+ hc.state.DeviceID=device
+ hc.state.InstallID=install
+ hc.mu.Unlock()
+ apiPayload:=map[string]any{
+   "req_scene":"ai_series","offset":0,"limit":18,"req_type":"only_content",
+   "need_selector_panel":false,"client_req_type":3,"session_id":"","filter_ids":"",
+   "select_items":map[string]any{"genre":[]string{"ai_series"},
+   "sort":[]string{"online_time"},"gender":[]string{},
+   "category_dim_theme":[]string{},"category_dim_role":[]string{},
+   "category_dim_epoch":[]string{},"online_time":[]string{},"creation_status":[]string{}},
+ }
+ result,reqErr:=engine.downloader.hongguoAppRequest(ctx,http.MethodPost,"/reading/distribution/category/landpage/v/",nil,apiPayload)
+ t.Logf("API_REGISTERED_WITHOUT_COOKIES JSON=%v ERR=%v",len(result)>0,reqErr)
+ jar,err:=cookiejar.New(nil)
+ if err!=nil{t.Fatal(err)}
+ accepted:=map[string]bool{"store-region":true,"store-region-src":true,"install_id":true,"ttreq":true}
+ var copied []*http.Cookie
+ for _,cookie:=range response.Cookies() {
+  if accepted[cookie.Name] && cookie.Value!=""{
+    copied=append(copied,&http.Cookie{Name:cookie.Name,Value:cookie.Value,Path:"/"})
+  }
+ }
+ for _,host:=range []string{"api5-normal-sinfonlineb.fqnovel.com","api5-normal-sinfonlinea.fqnovel.com","api5-normal-sinfonlinec.fqnovel.com"}{
+  target:=&url.URL{Scheme:"https",Host:host}
+  jar.SetCookies(target,copied)
+ }
+ engine.downloader.client.Jar=jar
+ t.Logf("REGISTERED_COOKIE_COUNT=%d",len(copied))
+ for _,host:=range []string{"api5-normal-sinfonlineb.fqnovel.com","api5-normal-sinfonlinea.fqnovel.com","api5-normal-sinfonlinec.fqnovel.com"}{
+   hc.mu.Lock()
+   hc.baseURL="https://"+host
+   hc.mu.Unlock()
+   data,e:=engine.downloader.hongguoAppRequest(ctx,http.MethodPost,"/reading/distribution/category/landpage/v/",nil,apiPayload)
+   t.Logf("API_REGISTERED_WITH_COOKIES HOST=%s JSON=%v ERR=%v",host,len(data)>0,e)
+ }
 }
+
