@@ -44,7 +44,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
     });
     if (choices.length > 500) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已选前 500 集；可清空后按分组选择其他集数，或从发现页使用整剧批量下载')),
+        const SnackBar(content: Text('已選前 500 集；可清空後按分組選擇其他集數，或從探索頁使用整劇批次下載')),
       );
     }
   }
@@ -53,7 +53,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
     if (!_selected.contains(episode.number) && _selected.length >= 500) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('一次最多加入 500 集，请分批下载')));
+      ).showSnackBar(const SnackBar(content: Text('一次最多加入 500 集，請分批下載')));
       return;
     }
     setState(() {
@@ -113,7 +113,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
                   children: [
                     Expanded(
                       child: Text(
-                        widget.embedded ? '下载选集' : widget.detail.drama.title,
+                        widget.embedded ? '下載選集' : widget.detail.drama.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
@@ -144,13 +144,13 @@ class _DownloadPickerState extends State<DownloadPicker> {
                   children: [
                     TextButton(
                       onPressed: _submitting ? null : () => _select(episodes),
-                      child: const Text('全选'),
+                      child: const Text('全選'),
                     ),
                     TextButton(
                       onPressed: _submitting || _selected.isEmpty
                           ? null
                           : () => setState(() => _selected.clear()),
-                      child: Text(widget.embedded ? '清空' : '取消全选'),
+                      child: Text(widget.embedded ? '清空' : '取消全選'),
                     ),
                     TextButton(
                       onPressed: _submitting
@@ -158,7 +158,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
                           : () => _select(
                               episodes.where((episode) => !episode.vip),
                             ),
-                      child: const Text('仅非 VIP'),
+                      child: const Text('僅非 VIP'),
                     ),
                     const SizedBox(width: 4),
                     const Text('画质'),
@@ -204,7 +204,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
                     0,
                   ),
                   child: Text(
-                    '已选 VIP 集可能只能下载试看内容。',
+                    '已選 VIP 集可能只能下載試看內容。',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.tertiary,
                       fontSize: 12,
@@ -238,7 +238,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
                         )
                       : const Icon(Icons.download_rounded),
                   label: Text(
-                    _submitting ? '正在加入下载…' : '加入下载 · ${_selected.length} 集',
+                    _submitting ? '正在加入下載…' : '加入下載 · ${_selected.length} 集',
                   ),
                 ),
               ),
@@ -255,7 +255,7 @@ class _DownloadPickerState extends State<DownloadPicker> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('下载选集'),
+        title: const Text('下載選集'),
         automaticallyImplyLeading: true,
       ),
       body: content,
