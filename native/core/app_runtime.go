@@ -635,10 +635,21 @@ func (engine *nativeEngine) nativeCatalog(ctx context.Context, input nativeInput
 		if category != "" && state != nil {
 			result.HasMore = !state.Feeds["category:"+category].Exhausted
 		}
-		if len(items) == 0 && err != nil && ctx.Err() == nil && (category == "" || category == "short_play") {
-			var totalPages int
-			items, totalPages, err = d.fetchHongguoCategoryPage(ctx, "real-drama?page="+strconv.Itoa(page), "真人剧")
-			result.HasMore = page < totalPages
+		if len(items) == 0 && err != nil && ctx.Err() == nil {
+			// The Hongguo App API can return HTTP 200 with an empty body.
+			// Fall back to the matching public web catalogue, including
+			// AI dramas and comics (previously only real dramas).
+			appErr := err
+			webItems, totalPages, webErr := d.fetchHongguoWebCatalogCategory(ctx, category, page)
+			switch {
+			case webErr == nil && len(webItems) > 0:
+				items, err = webItems, nil
+				result.HasMore = totalPages > page
+			case webErr != nil:
+				err = errors.Join(appErr, fmt.Errorf("红果网页目录备援失败: %w", webErr))
+			default:
+				err = errors.Join(appErr, errors.New("红果网页目录备援未返回剧集"))
+			}
 		}
 	case sourceHuangdou:
 		client := newHuangdouAPIClient(d)
