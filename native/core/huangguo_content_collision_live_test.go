@@ -5,6 +5,7 @@ import (
  "crypto/sha256"
  "fmt"
  "strings"
+ "net/url"
  "testing"
  "time"
 )
@@ -65,4 +66,38 @@ func TestHuangguoLiveCatalogDetailIdentityDiagnostics(t *testing.T) {
  }
  if len(seenIDs)==0 {t.Fatal("no Huangguo text catalog reachable")}
  t.Logf("UNIQUE_DRAMA_IDS=%d",len(seenIDs))
+}
+
+func TestHuangguoKnownTitlesCollisionSignatures(t *testing.T) {
+ ctx,cancel:=context.WithTimeout(context.Background(),90*time.Second)
+ defer cancel()
+ engine,err:=newNativeEngine(t.TempDir())
+ if err!=nil {t.Fatal(err)}
+ t.Cleanup(engine.downloads.close)
+ for _,item:=range []struct{id,title string}{
+  {"12","神瞳覺醒 第一季"},
+  {"117","高三愛情故事"},
+  {"417","AI魔改 雙規"},
+  {"5962","不同首頁作品對照"},
+ }{
+  detail:="https://huangguoai.com/detail/"+item.id+"/"
+  raw,err:=engine.downloader.fetchProviderText(ctx,detail,"https://huangguoai.com/")
+  if err!=nil {t.Logf("TITLE_ID=%s title=%q DETAIL_ERROR=%v",item.id,item.title,err);continue}
+  episodes:=parseHuangguoAIEpisodes(raw,detail,item.id)
+  if len(episodes)==0 {t.Logf("TITLE_ID=%s title=%q NO_EPISODES detail_media=%v",item.id,item.title,parseAIVideoURL(raw,detail)!="");continue}
+  for eindex,episode:=range episodes {
+   if eindex>=2 {break}
+   rawEpisode,err:=engine.downloader.fetchProviderText(ctx,episode.URL,detail)
+   if err!=nil{t.Logf("TITLE_ID=%s EP=%d ERR=%v",item.id,eindex+1,err);continue}
+   media:=parseAIVideoURL(rawEpisode,episode.URL)
+   initial:=parseAIVideoInitialData(rawEpisode,episode.URL)
+   category:="generic-regex"
+   if initial!="" && media==initial {category="videoInitialData"}
+   if m:=reDataPlaySrc.FindStringSubmatch(rawEpisode);len(m)>1 && normalizeProviderMediaURL(episode.URL,m[1])==media {category="data-play-src"}
+   hashed:=""
+   targetHost:=""
+   if media!="" {digest:=sha256.Sum256([]byte(media));hashed=fmt.Sprintf("%x",digest[:6]);if parsed,e:=url.Parse(media);e==nil{targetHost=parsed.Hostname()}}
+   t.Logf("TITLE_ID=%s title=%q EP=%d PAGE=%q MEDIA_METHOD=%s MEDIA_HOST=%q MEDIA_FINGERPRINT=%s HAS_INITIAL=%v",item.id,item.title,eindex+1,episode.Key,category,targetHost,hashed,strings.Contains(rawEpisode,"videoInitialData"))
+  }
+ }
 }
