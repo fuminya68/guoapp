@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'windows-build/**'
+      - 'security/**'
     paths:
       - '.github/workflows/windows-x64.yml'
       - 'lib/**'
