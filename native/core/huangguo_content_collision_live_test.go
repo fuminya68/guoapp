@@ -115,6 +115,15 @@ func TestHuangguoDetailVideoAnchorOwnership(t *testing.T) {
   raw,err:=engine.downloader.fetchProviderText(ctx,page,"https://huangguoai.com/")
   if err!=nil{t.Fatalf("detail %s: %v",id,err)}
   links:=reAIEpisodeLink.FindAllStringSubmatchIndex(raw,-1)
+  matches:=0
+  for _,match:=range links {
+    href:=raw[match[2]:match[3]]
+    if aiEpisodeKey(href,id)=="1" || strings.HasPrefix(href,"/video/"+id+"/") {matches++}
+  }
+  fromDetail:=parseAIVideoURL(raw,page)
+  summary:=""
+  if fromDetail!="" {sum:=sha256.Sum256([]byte(fromDetail)); summary=fmt.Sprintf("%x",sum[:6])}
+  t.Logf("SOURCE_VALIDITY id=%s matching_owned_links=%d detail_has_media=%v detail_media_fingerprint=%s initial_data=%v",id,matches,fromDetail!="",summary,strings.Contains(raw,"videoInitialData"))
   t.Logf("DETAIL_PAGE id=%s all_video_anchors=%d",id,len(links))
   for index,m:=range links {
    if index>=12{break}
