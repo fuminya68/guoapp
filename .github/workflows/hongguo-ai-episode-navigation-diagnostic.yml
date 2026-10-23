@@ -1,0 +1,21 @@
+name: Hongguo AI episode navigation identity diagnostic
+on:
+  push:
+    branches:
+      - diagnostics/hongguo-ai-episode-2-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  episode-id:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Inspect three actual episode IDs and official player page identities
+        working-directory: native
+        run: go test ./core -run TestHongguoAIRealFirstThreeEpisodePageIdentity -count=1 -v -timeout 3m
