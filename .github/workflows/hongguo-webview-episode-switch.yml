@@ -1,0 +1,29 @@
+name: Hongguo WebView2 episode switching regression
+on:
+  push:
+    branches:
+      - security/hongguo-webview-episode-switch-20261024
+    paths:
+      - lib/hongguo_web_player_screen.dart
+      - lib/hongguo_web_fallback.dart
+      - test/hongguo_web_fallback_test.dart
+      - .github/workflows/hongguo-webview-episode-switch.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  episode-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze Windows WebView2 navigation and episode selection
+        run: dart analyze lib/hongguo_web_player_screen.dart lib/hongguo_web_fallback.dart test/hongguo_web_fallback_test.dart
+      - name: Verify exact episode navigation, safe popup handling and old fallback tests
+        run: flutter test test/hongguo_web_fallback_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true

@@ -3,6 +3,11 @@ import 'package:duanju_app/hongguo_web_fallback.dart';
 import 'package:duanju_app/models.dart';
 
 void main() {
+  Drama drama(String source, String sourceId) =>
+      Drama(id: '$source:$sourceId', source: source, sourceId: sourceId, title: '測試');
+  Episode episode(String videoUrl) =>
+      Episode({'videoUrl': videoUrl, 'id': 'episode', 'title': '第一集'}, 1);
+
   test('Windows direct play selects only validated Hongguo URLs', () {
     final item = Drama(id:'hongguo:123', source:'hongguo', sourceId:'123', title:'修仙滿級回現代');
     final detail = DramaDetail(item, [
@@ -31,6 +36,40 @@ void main() {
     ]) {expect(isTrustedHongguoWebviewNavigation(u),isFalse);}
   });
 
+
+  test('website episode navigation only accepts actual current-series episodes', () {
+    final detail = DramaDetail(
+      drama('hongguo', '123'),
+      [
+        episode('hongguo-cenc://456'),
+        episode('hongguo-cenc://789'),
+      ],
+    );
+    expect(hongguoEpisodeIndexFromWebviewUrl(
+      detail, 'https://novelquickapp.com/player/123/789'
+    ), 1);
+    for (final bad in [
+      'https://novelquickapp.com/player/124/789',
+      'https://novelquickapp.com/player/123/888',
+      'https://novelquickapp.com/player/123/789/extra',
+      'https://novelquickapp.com.evil.test/player/123/789',
+      'file:///C:/Windows/',
+      'https://novelquickapp.com:8443/player/123/789',
+    ]) {
+      expect(hongguoEpisodeIndexFromWebviewUrl(detail,bad), isNull);
+    }
+  });
+
+  test('popup handler allows only matching-series browser episode routes', () {
+    final script = hongguoSameSeriesNavigationScript(drama('hongguo','123'));
+    expect(script, isNotNull);
+    expect(script, contains("const seriesId = '123'"));
+    expect(script, contains("window.location.assign(url)"));
+    expect(script, contains("document.addEventListener('click'"));
+    expect(hongguoSameSeriesNavigationScript(drama('hongguo','../123')), isNull);
+    expect(hongguoSameSeriesNavigationScript(drama('huangguoai','123')), isNull);
+  });
+
   test('Windows browser launches only from protected system directory', () {
     expect(trustedWindowsExplorerPath(r'C:\Windows'), r'C:\Windows\explorer.exe');
     expect(trustedWindowsExplorerPath(r'D:\WINDOWS'), r'D:\WINDOWS\explorer.exe');
@@ -46,14 +85,10 @@ void main() {
       expect(trustedWindowsExplorerPath(root), isNull);
     }
   });
-  Drama drama(String source, String sourceId) =>
-      Drama(id: '$source:$sourceId', source: source, sourceId: sourceId, title: '測試');
   test('known public Hongguo detail deep link uses numeric series ID only', () {
     expect(officialHongguoDramaUrl(drama('hongguo', '7615112833881082905')),
       'https://hongguoduanju.com/detail?series_id=7615112833881082905');
   });
-  Episode episode(String videoUrl) =>
-      Episode({'videoUrl': videoUrl, 'id': 'episode', 'title': '第一集'}, 1);
 
   test('opens only the exact public episode for the requested series', () {
     expect(
