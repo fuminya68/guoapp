@@ -22,6 +22,7 @@ import 'downloads_screen.dart';
 import 'follow_state.dart';
 import 'local_store.dart';
 import 'models.dart';
+import 'hongguo_web_fallback.dart';
 import 'playback_loader.dart';
 import 'playback_preloader.dart';
 import 'playback_recovery.dart';
@@ -1461,6 +1462,14 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
   }
 
+  Future<void> _openHongguoWebFallback() async {
+    final link = officialHongguoDramaUrl(widget.detail.drama);
+    if (link == null) return;
+    if (!await openOfficialHongguoDramaInBrowser(widget.detail.drama)) {
+      _notice('無法開啟瀏覽器，請自行前往紅果官方網站觀看。');
+    }
+  }
+
   void _back() {
     if (_showFullscreen && !_television) {
       _rotate();
@@ -1795,6 +1804,16 @@ class _PlayerScreenState extends State<PlayerScreen>
                           icon: const Icon(Icons.receipt_long_rounded),
                           label: const Text('查看播放日記'),
                         ),
+                        if (Platform.isWindows &&
+                            !_localFailure &&
+                            !widget.localOnly &&
+                            officialHongguoDramaUrl(widget.detail.drama) != null)
+                          TextButton.icon(
+                            key: const ValueKey('hongguo-official-web'),
+                            onPressed: _openHongguoWebFallback,
+                            icon: const Icon(Icons.open_in_browser_rounded),
+                            label: const Text('在紅果網站嘗試觀看此劇'),
+                          ),
                         if (_localFailure && widget.allowOnlineFallback)
                           TextButton.icon(
                             onPressed: _switchOnline,

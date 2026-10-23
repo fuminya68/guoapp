@@ -188,13 +188,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('下载选集'));
+        await tester.tap(find.byTooltip('下載選集'));
         await tester.pumpAndSettle();
-        expect(find.text('加入下载 · 2 集'), findsOneWidget);
-        expect(find.text('已选 VIP 集可能只能下载试看内容。'), findsNothing);
-        await tester.tap(find.text('取消全选'));
+        expect(find.text('加入下載 · 2 集'), findsOneWidget);
+        expect(find.text('已選 VIP 集可能只能下載試看內容。'), findsNothing);
+        await tester.tap(find.text('取消全選'));
         await tester.pumpAndSettle();
-        expect(find.text('加入下载 · 0 集'), findsOneWidget);
+        expect(find.text('加入下載 · 0 集'), findsOneWidget);
         expect(
           tester
               .widget<FilledButton>(
@@ -203,10 +203,10 @@ void main() {
               .onPressed,
           isNull,
         );
-        await tester.tap(find.text('全选'));
+        await tester.tap(find.text('全選'));
         await tester.pumpAndSettle();
-        expect(find.text('已选 VIP 集可能只能下载试看内容。'), findsOneWidget);
-        await tester.tap(find.text('仅非 VIP'));
+        expect(find.text('已選 VIP 集可能只能下載試看內容。'), findsOneWidget);
+        await tester.tap(find.text('僅非 VIP'));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('download-quality')));
         await tester.pumpAndSettle();
@@ -217,7 +217,7 @@ void main() {
         expect(repository.selected, [1, 2]);
         expect(repository.quality, 720);
         expect(
-          find.text(added == 0 ? '所选集数已在下载列表中' : '已加入 2 集，已有任务自动跳过'),
+          find.text(added == 0 ? '所選集數已在下載列表中' : '已加入 2 集，已有任務自動跳過'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -262,7 +262,7 @@ void main() {
     expect(find.text('加入追剧'), findsOneWidget);
     await tester.tap(find.text('下载'));
     await tester.pumpAndSettle();
-    expect(find.text('下载选集'), findsOneWidget);
+    expect(find.text('下載選集'), findsOneWidget);
     expect(find.byKey(const ValueKey('download-episode-1')), findsOneWidget);
     expect(find.text('清空'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('download-quality')));

@@ -204,7 +204,7 @@ class _DetailScreenState extends State<DetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(added == 0 ? '所選集數已在下載列表中' : '已加入 $added 集，已有任务自動跳過'),
+          content: Text(added == 0 ? '所選集數已在下載列表中' : '已加入 $added 集，已有任務自動跳過'),
           action: SnackBarAction(
             label: '查看',
             onPressed: () {
