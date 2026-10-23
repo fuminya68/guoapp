@@ -45,8 +45,8 @@ ARCHIVES = (
     },
     {
         "name": "mpv",
-        "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260921/mpv-dev-x86_64-20260921-git-e76a35ec95.7z",
-        "sha256": "361392d64a231830ac79d1c0f91ddb68c6a709accd282b2c87b13889d382fdec",
+        "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261021/mpv-dev-x86_64-20261021-git-e471496c56.7z",
+        "sha256": "efc719eff3dc5954b4a5efc800632808bcec01cc9034940dd14e5eb7fe9ea633",
         "dlls": ("libmpv-2.dll",),
     },
     {
