@@ -19,7 +19,7 @@ import 'lan_screen.dart';
 import 'diary_service.dart';
 
 String storageSize(int bytes) {
-  if (bytes < 0) return '暂不可用';
+  if (bytes < 0) return '暫不可用';
   if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
   if (bytes < 1024 * 1024 * 1024) {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
@@ -47,7 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('外观主题'),
+        title: const Text('外觀主題'),
         children: [
           RadioGroup<String>(
             groupValue: widget.store.themeMode,
@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: mode,
                     title: Text(AppTheme.label(mode)),
                     subtitle: mode == 'system'
-                        ? const Text('随设备的深色模式自动切换')
+                        ? const Text('随設備的深色模式自動切換')
                         : null,
                   ),
               ],
@@ -88,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           bytes: Uint8List.fromList(utf8.encode(content)),
           mimeType: 'application/json',
         );
-        if (saved != null && mounted) setState(() => _message = '备份已保存');
+        if (saved != null && mounted) setState(() => _message = '備份已保存');
       } else {
         final file = await FilePicker.pickFile(
           type: FileType.custom,
@@ -97,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (file == null || !mounted) return;
         final size = await file.length();
         if (size == null || size > 8 * 1024 * 1024) {
-          throw const FormatException('备份文件过大或无法读取');
+          throw const FormatException('備份文件過大或無法读取');
         }
         final content = utf8.decode(await file.readAsBytes());
         final data = widget.store.validateBackup(content);
@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final accepted = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('恢复备份？'),
+            title: const Text('恢復備份？'),
             content: Text(
               '包含 ${(data['profiles'] as List).length} 个用户。将替换本机的用户、追剧、观看记录和偏好设置；已下载视频保留。恢复后使用备份内的管理员密码登录。',
             ),
@@ -146,8 +146,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 key: const ValueKey('lan-settings'),
                 leading: const Icon(Icons.devices_rounded),
-                title: const Text('设备互联'),
-                subtitle: const Text('局域网自动同步追剧与推送播放'),
+                title: const Text('設備互联'),
+                subtitle: const Text('局域網自動同步追劇與推送播放'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => openLanSync(context),
               ),
@@ -155,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.dns_outlined),
                   title: const Text('站源管理'),
-                  subtitle: const Text('独立更新、连接与播放检测'),
+                  subtitle: const Text('独立更新、連接與播放檢測'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(
                     context,
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 key: const ValueKey('theme-setting'),
                 leading: const Icon(Icons.palette_outlined),
-                title: const Text('外观主题'),
+                title: const Text('外觀主題'),
                 subtitle: Text(AppTheme.label(widget.store.themeMode)),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _chooseTheme,
@@ -189,15 +189,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 key: const ValueKey('diary-setting'),
                 leading: const Icon(Icons.receipt_long_rounded),
-                title: const Text('播放调试日记'),
-                subtitle: const Text('查看并复制应用运行与播放器的详细事件日志'),
+                title: const Text('播放调試日記'),
+                subtitle: const Text('查看并復制應用运行與播放器的详细事件日志'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => DiaryService.showDiaryDialog(context),
               ),
               if (widget.store.canDownload)
                 ListTile(
                   leading: const Icon(Icons.download_outlined),
-                  title: const Text('下载偏好'),
+                  title: const Text('下載偏好'),
                   subtitle: Text(widget.store.downloadPreferences.qualityLabel),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(
@@ -211,8 +211,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (widget.store.canDownload)
                 ListTile(
                   leading: const Icon(Icons.folder_outlined),
-                  title: const Text('下载目录与空间'),
-                  subtitle: const Text('查看存储用量、迁移已下载文件'),
+                  title: const Text('下載目錄與空間'),
+                  subtitle: const Text('查看存储用量、迁移已下載文件'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
@@ -226,8 +226,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (widget.store.profile.admin) ...[
                 ListTile(
                   leading: const Icon(Icons.settings_ethernet_rounded),
-                  title: const Text('网络与资源'),
-                  subtitle: const Text('代理、目录请求间隔、下载并发与站源目录'),
+                  title: const Text('網絡與資源'),
+                  subtitle: const Text('代理、目錄請求間隔、下載并發與站源目錄'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(
                     context,
@@ -241,9 +241,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 SwitchListTile(
                   value: widget.store.autoExport,
-                  title: const Text('下载完成后自动导出 Emby'),
+                  title: const Text('下載完成後自動導出 Emby'),
                   subtitle: const Text(
-                    '在下载目录的 exports 中生成视频和海报 URL 元数据，可将该目录加入 Emby 媒体库。',
+                    '在下載目錄的 exports 中生成視頻和海报 URL 元數据，可将该目錄加入 Emby 媒體庫。',
                   ),
                   onChanged: _busy
                       ? null
@@ -262,8 +262,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 SwitchListTile(
                   value: widget.store.exportPosters,
-                  title: const Text('同时导出海报文件'),
-                  subtitle: const Text('默认只写海报 URL。源站海报需要解密或外部读取失败时可开启。'),
+                  title: const Text('同時導出海报文件'),
+                  subtitle: const Text('默認只写海报 URL。源站海报需要解密或外部读取失败時可開啟。'),
                   onChanged: _busy
                       ? null
                       : (value) => saveUserChange(
@@ -273,20 +273,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
-                  title: const Text('导出配置备份'),
-                  subtitle: const Text('包含本地用户、追剧、历史和设置，不含视频文件'),
+                  title: const Text('導出配置備份'),
+                  subtitle: const Text('包含本地用户、追劇、歷史和設置，不含視頻文件'),
                   onTap: _busy ? null : () => _backup(false),
                 ),
                 ListTile(
                   leading: const Icon(Icons.restore),
-                  title: const Text('恢复配置备份'),
+                  title: const Text('恢復配置備份'),
                   onTap: _busy ? null : () => _backup(true),
                 ),
               ],
               if (Platform.isIOS)
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('iOS 下载和媒体处理需要保持应用在前台；切到后台会暂停，回到前台后可继续。'),
+                  child: Text('iOS 下載和媒體處理需要保持應用在前台；切到後台会暫停，回到前台後可继續。'),
                 ),
               if (_busy) const LinearProgressIndicator(),
               if (_message != null)
@@ -342,23 +342,23 @@ class _StorageScreenState extends State<StorageScreen> {
     String? parent;
     if (Platform.isAndroid || Platform.isIOS) {
       final support = await getApplicationSupportDirectory();
-      final directories = <String, String>{support.path: '应用内部存储'};
+      final directories = <String, String>{support.path: '應用內部存储'};
       if (Platform.isAndroid) {
         final external = await getExternalStorageDirectories() ?? [];
         for (var i = 0; i < external.length; i++) {
           directories[external[i].path] = i == 0
-              ? '设备共享存储（应用目录）'
-              : 'SD 卡 ${i + 1}（应用目录）';
+              ? '設備共享存储（應用目錄）'
+              : 'SD 卡 ${i + 1}（應用目錄）';
         }
       } else {
         final documents = await getApplicationDocumentsDirectory();
-        directories[documents.path] = '文件 App 可见目录';
+        directories[documents.path] = '文件 App 可见目錄';
       }
       if (!mounted) return;
       parent = await showDialog<String>(
         context: context,
         builder: (context) => SimpleDialog(
-          title: const Text('选择下载位置'),
+          title: const Text('選擇下載位置'),
           children: [
             for (final entry in directories.entries)
               SimpleDialogOption(
@@ -369,15 +369,15 @@ class _StorageScreenState extends State<StorageScreen> {
         ),
       );
     } else {
-      parent = await FilePicker.getDirectoryPath(dialogTitle: '选择下载保存位置');
+      parent = await FilePicker.getDirectoryPath(dialogTitle: '選擇下載保存位置');
     }
     if (parent == null || !mounted) return;
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('迁移已下载内容？'),
+        title: const Text('迁移已下載內容？'),
         content: Text(
-          '将视频、合并成品及导出内容迁移到：\n$parent\n\n下载会先暂停，复制成功后清理旧目录。请保证目标有足够空间，并在完成后继续下载。',
+          '将視頻、合并成品及導出內容迁移到：\n$parent\n\n下載会先暫停，復制成功後清理旧目錄。請保证目标有足够空間，并在完成後继續下載。',
         ),
         actions: [
           TextButton(
@@ -410,7 +410,7 @@ class _StorageScreenState extends State<StorageScreen> {
   Widget build(BuildContext context) => PopScope(
     canPop: !_busy,
     child: Scaffold(
-      appBar: AppBar(title: const Text('下载目录与空间')),
+      appBar: AppBar(title: const Text('下載目錄與空間')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -435,17 +435,17 @@ class _StorageScreenState extends State<StorageScreen> {
                     ClipboardData(text: _info!['directory'] as String? ?? ''),
                   ),
                   icon: const Icon(Icons.copy),
-                  label: const Text('复制路径'),
+                  label: const Text('復制路径'),
                 ),
                 const SizedBox(height: 20),
-                const Text('在下载页删除不需要的分集，在本地媒体页删除合并成品或 Emby 导出，可释放空间。'),
+                const Text('在下載頁刪除不需要的分集，在本地媒體頁刪除合并成品或 Emby 導出，可释放空間。'),
               ],
               if (_busy || (_info == null && _error == null))
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: LinearProgressIndicator(),
                 ),
-              if (_busy) const Text('正在迁移，请保持应用运行…'),
+              if (_busy) const Text('正在迁移，請保持應用运行…'),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -455,7 +455,7 @@ class _StorageScreenState extends State<StorageScreen> {
                 FilledButton.icon(
                   onPressed: _busy ? null : _move,
                   icon: const Icon(Icons.drive_file_move_outline),
-                  label: const Text('更改并迁移目录'),
+                  label: const Text('更改并迁移目錄'),
                 ),
               TextButton(
                 onPressed: _busy ? null : _refresh,

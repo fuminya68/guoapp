@@ -24,7 +24,7 @@ import 'diary_service.dart';
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
-  DiaryService.add('[App] 应用启动，版本: 0.2.64+71, 平台: ${Platform.operatingSystem}');
+  DiaryService.add('[App] 應用啟動，版本: 0.2.64+71, 平台: ${Platform.operatingSystem}');
   if (Platform.isAndroid) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(AppTheme.systemBars(Brightness.dark));
@@ -153,16 +153,16 @@ class _AppBootstrapState extends State<AppBootstrap>
                 builder: (context) {
                   dialogContext = context;
                   return AlertDialog(
-                    title: const Text('允许新设备连接？'),
+                    title: const Text('允许新設備連接？'),
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('设备：${peer.name}'),
+                        Text('設備：${peer.name}'),
                         const SizedBox(height: 8),
-                        Text('设备指纹：${peer.pin.substring(0, 16)}…'),
+                        Text('設備指纹：${peer.pin.substring(0, 16)}…'),
                         const SizedBox(height: 12),
-                        const Text('首次连接将允许对方请求同步追剧记录及推送播放。请确认这是您自己的设备。'),
+                        const Text('首次連接将允许對方請求同步追劇記錄及推送播放。請確認這是您自己的設備。'),
                       ],
                     ),
                     actions: [
@@ -203,7 +203,7 @@ class _AppBootstrapState extends State<AppBootstrap>
               throw StateError('播放接收已取消');
             }
             final navigation = navigator.currentState;
-            if (navigation == null) throw StateError('接收设备界面尚未就绪');
+            if (navigation == null) throw StateError('接收設備界面尚未就绪');
             unawaited(
               navigation.pushAndRemoveUntil<void>(
                 MaterialPageRoute<void>(
@@ -272,8 +272,8 @@ class DuanjuApp extends StatelessWidget {
     navigatorKey: navigatorKey,
     title: appName,
     debugShowCheckedModeBanner: false,
-    locale: const Locale('zh', 'CN'),
-    supportedLocales: const [Locale('zh', 'CN')],
+    locale: const Locale('zh', 'TW'),
+    supportedLocales: const [Locale('zh', 'TW')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: AppTheme.light,
     darkTheme: AppTheme.dark,
@@ -337,7 +337,7 @@ class DuanjuApp extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      bootstrapError ?? '正在打开$appName',
+                      bootstrapError ?? '正在打開$appName',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 18),
                     ),
@@ -347,7 +347,7 @@ class DuanjuApp extends StatelessWidget {
                     else
                       FilledButton(
                         onPressed: onRetry,
-                        child: const Text('重新打开'),
+                        child: const Text('重新打開'),
                       ),
                   ],
                 ),

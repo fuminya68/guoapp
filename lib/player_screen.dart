@@ -92,6 +92,8 @@ class _PlayerScreenState extends State<PlayerScreen>
   String? _savedProgressKey;
   final _health = PlaybackHealth();
   Timer? _saveTimer;
+  Timer? _volumeSaveTimer;
+  double? _pendingVolume;
   Timer? _healthTimer;
   Timer? _errorTimer;
   Timer? _pictureInPictureExitTimer;
@@ -122,7 +124,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   bool _pictureInPictureRequested = false;
   bool _pictureInPictureHandlerInstalled = false;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
-  String _loadingMessage = '正在准备播放';
+  String _loadingMessage = '正在准備播放';
   String? _error;
   String? _saveWarning;
   PlaybackPlan? _plan;
@@ -146,6 +148,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _enhancement.supported ? _enhancement : null;
   PlaybackPreferences get _preferences => PlaybackPreferences(
     speed: _speed,
+    volume: _player.state.volume,
     quality: _requestedQuality,
     autoAdvance: _autoAdvance,
     danmaku: _danmakuEnabled,
@@ -153,9 +156,9 @@ class _PlayerScreenState extends State<PlayerScreen>
     enhancement: _enhancement.preferences,
   );
   String get _qualityLabel => _plan?.local == true
-      ? '本地原画'
+      ? '本地原畫'
       : _requestedQuality == 0
-      ? '自动'
+      ? '自動'
       : '${_requestedQuality}P';
   String get _session => _plan?.session ?? '';
   double get _currentPosition =>
@@ -220,8 +223,8 @@ class _PlayerScreenState extends State<PlayerScreen>
       onFullscreen: _rotate,
       onEpisode: (direction) {
         final next = _index + direction;
-        if (next < 0) return '已经是第一集';
-        if (next >= widget.detail.episodes.length) return '已经是最后一集';
+        if (next < 0) return '已經是第一集';
+        if (next >= widget.detail.episodes.length) return '已經是最後一集';
         unawaited(_play(next));
         return '第 ${widget.detail.episodes[next].number} 集';
       },
@@ -300,6 +303,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         }
       }),
     );
+    _subscriptions.add(_player.stream.volume.listen(_recordVolume));
+    unawaited(_player.setVolume(preferences.volume));
     _saveTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) => _saveProgress(),
@@ -327,7 +332,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
     if (_profileEpoch != widget.store.profileEpoch ||
         handoff?.cancelled == true) {
-      handoff?.fail('接收用户已变更，推送已取消');
+      handoff?.fail('接收用户已變更，推送已取消');
       if (handoff != null)
         unawaited(widget.repository.release(handoff.plan.session));
       _loading = false;
@@ -356,7 +361,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _enhancement.suspend();
       _handoffOwned = false;
       _playIntent = false;
-      widget.handoff?.fail('接收端用户已变更');
+      widget.handoff?.fail('接收端用户已變更');
       unawaited(_player.pause());
     }
     if (!_closed &&
@@ -502,7 +507,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         requested: requested && !active,
       );
       if (!supported || (!active && !requested)) {
-        _notice('当前设备不支持画中画');
+        _notice('当前設備不支持畫中畫');
       } else if (requested && !active) {
         _pictureInPictureExitTimer?.cancel();
         _pictureInPictureExitTimer = Timer(const Duration(seconds: 2), () {
@@ -515,10 +520,10 @@ class _PlayerScreenState extends State<PlayerScreen>
       }
     } on PlatformException {
       _setPictureInPictureStatus(requested: false);
-      _notice('无法进入画中画，请检查系统权限');
+      _notice('無法進入畫中畫，請檢查系统权限');
     } on MissingPluginException {
       _setPictureInPictureStatus(supported: false, requested: false);
-      _notice('当前平台不支持画中画');
+      _notice('当前平台不支持畫中畫');
     }
   }
 
@@ -577,7 +582,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     final position = state.position.inMilliseconds / 1000;
     final duration = state.duration.inMilliseconds / 1000;
     if (duration > 0 && handoff.position > duration + 2) {
-      handoff.fail('续播位置超过接收端分集时长');
+      handoff.fail('續播位置超過接收端分集時长');
       return;
     }
     if (!state.playing ||
@@ -637,9 +642,9 @@ class _PlayerScreenState extends State<PlayerScreen>
         ),
         stillCurrent: current,
         onAccepted: () async {
-          if (!current()) throw StateError('本机播放内容已变更');
+          if (!current()) throw StateError('本機播放內容已變更');
           await _stopForLan();
-          if (!current()) throw StateError('本机播放内容已变更');
+          if (!current()) throw StateError('本機播放內容已變更');
         },
       );
     } catch (error) {
@@ -815,9 +820,9 @@ class _PlayerScreenState extends State<PlayerScreen>
           _localFailure = current.local;
           _error = current.local
               ? widget.allowOnlineFallback
-                    ? '本地视频读取失败，请重试或重新下载；也可以手动改为在线播放。'
-                    : '本地成品读取失败，请重试或重新生成。'
-              : '自动恢复未成功，请检查网络后重试，也可换一集或选择其他清晰度。';
+                    ? '本地視頻读取失败，請重試或重新下載；也可以手動改為在線播放。'
+                    : '本地成品读取失败，請重試或重新生成。'
+              : '自動恢復未成功，請檢查網絡後重試，也可換一集或選擇其他清晰度。';
         });
       }
       return;
@@ -880,7 +885,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       }
     } catch (_) {
       if (mounted && !_closed && _saveWarning == null) {
-        setState(() => _saveWarning = '观看进度尚未保存，请检查存储空间后重试。');
+        setState(() => _saveWarning = '觀看進度尚未保存，請檢查存储空間後重試。');
       }
     }
   }
@@ -910,7 +915,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         handoffPlan == null &&
         recoveryAction == null) {
       _handoffOwned = false;
-      widget.handoff?.fail('接收端已更换播放内容');
+      widget.handoff?.fail('接收端已更換播放內容');
     }
     if (index != _index) _forceOnline = false;
     final warmed =
@@ -944,9 +949,9 @@ class _PlayerScreenState extends State<PlayerScreen>
       _error = null;
       _localFailure = false;
       _loadingMessage = switch (recoveryAction) {
-        PlaybackRecoveryAction.alternative => '正在切换备用线路',
-        PlaybackRecoveryAction.refresh => '正在重新获取播放地址',
-        _ => '正在准备播放',
+        PlaybackRecoveryAction.alternative => '正在切換備用線路',
+        PlaybackRecoveryAction.refresh => '正在重新獲取播放地址',
+        _ => '正在准備播放',
       };
     });
     LanController.current?.detachPlayback(_lanIdentity);
@@ -997,7 +1002,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           return;
         }
         if (plan.url.isEmpty) {
-          throw AppFailure('站源未返回播放地址，请重试');
+          throw AppFailure('站源未返回播放地址，請重試');
         }
         final platform = _player.platform;
         if (platform is NativePlayer) {
@@ -1075,7 +1080,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         }
       });
     } catch (error) {
-      DiaryService.add('[Play] 捕获播放流程错误: $error');
+      DiaryService.add('[Play] 捕獲播放流程錯誤: $error');
       if (!_closed && mounted && ticket == _generation) {
         if (prepared != null && identical(_plan, prepared)) {
           _acceptErrors = true;
@@ -1090,7 +1095,7 @@ class _PlayerScreenState extends State<PlayerScreen>
               _localFailure =
                   (error is AppFailure && error.code == 'local_media') ||
                   (widget.localOnly && !_forceOnline);
-              _error = error is AppFailure ? error.message : '无法播放这一集，请重试或换一集。';
+              _error = error is AppFailure ? error.message : '無法播放這一集，請重試或換一集。';
               widget.handoff?.fail(_error!);
             });
           }
@@ -1169,7 +1174,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           _fullscreen = previous;
           _automaticFullscreenSuppressed = previousSuppressed;
         });
-        _notice('无法切换全屏，请重试');
+        _notice('無法切換全屏，請重試');
       }
     } finally {
       _rotating = false;
@@ -1184,9 +1189,26 @@ class _PlayerScreenState extends State<PlayerScreen>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _recordVolume(double volume) {
+    if (_closed || widget.store.profileEpoch != _profileEpoch || !volume.isFinite) return;
+    _pendingVolume = volume.clamp(0.0, 100.0).toDouble();
+    _volumeSaveTimer?.cancel();
+    _volumeSaveTimer = Timer(const Duration(milliseconds: 250), _flushVolume);
+  }
+
+  void _flushVolume() {
+    _volumeSaveTimer?.cancel();
+    final volume = _pendingVolume;
+    _pendingVolume = null;
+    if (volume == null || widget.store.locked || widget.store.profileEpoch != _profileEpoch) return;
+    unawaited(widget.store.setPlaybackPreferences(
+      widget.store.playbackPreferences.copyWith(volume: volume),
+    ).catchError((Object _) {}));
+  }
+
   Future<void> _setPreferences(PlaybackPreferences preferences) async {
     if (_closed || widget.store.profileEpoch != _profileEpoch) {
-      throw StateError('当前用户已变更');
+      throw StateError('当前用户已變更');
     }
     _interactions.cancel();
     final nextPreferences = preferences.copyWith(
@@ -1221,7 +1243,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       await widget.store.toggleFavorite(widget.detail.drama);
       if (mounted && !_closed) setState(() {});
     } catch (_) {
-      _notice('追剧记录未能保存，请检查存储空间后重试');
+      _notice('追劇記錄未能保存，請檢查存储空間後重試');
     }
   }
 
@@ -1230,7 +1252,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     try {
       await _setPreferences(_preferences.copyWith(danmaku: !_danmakuEnabled));
     } catch (_) {
-      _notice('弹幕偏好未能保存，请重试');
+      _notice('彈幕偏好未能保存，請重試');
     }
   }
 
@@ -1239,7 +1261,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _danmaku.retry();
       _menuRevision.value++;
     } catch (_) {
-      _notice('弹幕重试失败，请稍后再试');
+      _notice('彈幕重試失败，請稍後再試');
     }
   }
 
@@ -1258,7 +1280,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     if (!mounted || _closed) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(added == 0 ? '所选集数已在下载列表中' : '已加入 $added 集，已有任务自动跳过'),
+        content: Text(added == 0 ? '所選集數已在下載列表中' : '已加入 $added 集，已有任务自動跳過'),
         action: SnackBarAction(
           label: '查看',
           onPressed: () {
@@ -1344,7 +1366,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       await _player.seek(target);
       succeeded = true;
     } catch (_) {
-      _notice('跳转失败，请重试');
+      _notice('跳轉失败，請重試');
     } finally {
       if (!_closed && ticket == _seekSequence && generation == _generation) {
         _danmaku.endSeek(succeeded ? target : _player.state.position);
@@ -1435,7 +1457,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         ),
       );
     } catch (_) {
-      _notice('播放偏好未能保存，请重试');
+      _notice('播放偏好未能保存，請重試');
     }
   }
 
@@ -1459,6 +1481,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _generation++;
     WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
+    _flushVolume();
     _healthTimer?.cancel();
     _errorTimer?.cancel();
     _pictureInPictureExitTimer?.cancel();
@@ -1564,7 +1587,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                     ),
                     actions: [
                       IconButton(
-                        tooltip: '旋转与全屏',
+                        tooltip: '旋轉與全屏',
                         onPressed: _rotate,
                         icon: const Icon(Icons.screen_rotation_alt_rounded),
                       ),
@@ -1757,10 +1780,10 @@ class _PlayerScreenState extends State<PlayerScreen>
                 ColoredBox(
                   color: Colors.black.withValues(alpha: .9),
                   child: StatusPanel(
-                    title: '暂时无法播放',
+                    title: '暫時無法播放',
                     message: _error!,
                     onRetry: () => _retry(),
-                    action: _localFailure ? '重试本地播放' : '重试播放',
+                    action: _localFailure ? '重試本地播放' : '重試播放',
                     secondaryAction: Wrap(
                       spacing: 12,
                       runSpacing: 10,
@@ -1770,13 +1793,13 @@ class _PlayerScreenState extends State<PlayerScreen>
                         FilledButton.tonalIcon(
                           onPressed: () => DiaryService.showDiaryDialog(context),
                           icon: const Icon(Icons.receipt_long_rounded),
-                          label: const Text('查看播放日记'),
+                          label: const Text('查看播放日記'),
                         ),
                         if (_localFailure && widget.allowOnlineFallback)
                           TextButton.icon(
                             onPressed: _switchOnline,
                             icon: const Icon(Icons.cloud_outlined),
-                            label: const Text('改为在线播放'),
+                            label: const Text('改為在線播放'),
                           )
                         else if (!_localFailure &&
                               !widget.localOnly &&
@@ -1809,7 +1832,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                         TextButton(
                           onPressed: () =>
                               _openPanel(PlayerMenuSection.episodes),
-                          child: const Text('选集'),
+                          child: const Text('選集'),
                         ),
                       ],
                     ),
@@ -1836,7 +1859,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                             ),
                             TextButton(
                               onPressed: _saveProgress,
-                              child: const Text('重试保存'),
+                              child: const Text('重試保存'),
                             ),
                           ],
                         ),
@@ -1885,9 +1908,9 @@ class _PlayerScreenState extends State<PlayerScreen>
       height: 42,
       child: Row(
         children: [
-          _mobileTabButton(0, '选集'),
-          _mobileTabButton(1, '简介'),
-          _mobileTabButton(2, '下载'),
+          _mobileTabButton(0, '選集'),
+          _mobileTabButton(1, '簡介'),
+          _mobileTabButton(2, '下載'),
         ],
       ),
     ),
@@ -1933,7 +1956,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         drama.releaseLabel,
       if (drama.category.isNotEmpty) drama.category,
     ];
-    final body = drama.description.trim().isEmpty ? '暂无简介' : drama.description;
+    final body = drama.description.trim().isEmpty ? '暫無簡介' : drama.description;
     return ColoredBox(
       color: colors.surface,
       child: ListView(
@@ -1972,7 +1995,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                       Text(
                         [
                           if (drama.onlineDate.isNotEmpty)
-                            '${drama.onlineDate} 上线',
+                            '${drama.onlineDate} 上線',
                           if (drama.heat.isNotEmpty) '热度 ${drama.heat}',
                           if (drama.views.isNotEmpty) '播放 ${drama.views}',
                         ].join(' · '),
@@ -2012,7 +2035,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     final state = widget.store.following(drama.id);
     return PopupMenuButton<String>(
       key: const ValueKey('player-follow-status'),
-      tooltip: '追剧与观看状态',
+      tooltip: '追劇與觀看狀態',
       onSelected: (value) async {
         if (_profileEpoch != widget.store.profileEpoch) return;
         if (value == 'remove') {
@@ -2039,7 +2062,7 @@ class _PlayerScreenState extends State<PlayerScreen>
             child: Text(status.label),
           ),
         if (state != null)
-          const PopupMenuItem(value: 'remove', child: Text('取消追剧')),
+          const PopupMenuItem(value: 'remove', child: Text('取消追劇')),
       ],
       child: Container(
         constraints: const BoxConstraints(minHeight: 36),
@@ -2060,7 +2083,7 @@ class _PlayerScreenState extends State<PlayerScreen>
               size: 18,
             ),
             const SizedBox(width: 6),
-            Text(state?.label ?? '加入追剧'),
+            Text(state?.label ?? '加入追劇'),
             const SizedBox(width: 2),
             const Icon(Icons.expand_more_rounded, size: 16),
           ],
@@ -2075,8 +2098,8 @@ class _PlayerScreenState extends State<PlayerScreen>
       return ColoredBox(
         color: colors.surface,
         child: const StatusPanel(
-          title: '下载不可用',
-          message: '当前用户或当前环境未开放本地下载。',
+          title: '下載不可用',
+          message: '当前用户或当前环境未開放本地下載。',
           icon: Icons.download_outlined,
         ),
       );
@@ -2095,7 +2118,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       episodes: widget.detail.episodes,
       currentIndex: _index,
       compact: compact,
-      title: compact ? '剧集' : '选集',
+      title: compact ? '劇集' : '選集',
       onSelected: (index) => _play(index),
     ),
   );
