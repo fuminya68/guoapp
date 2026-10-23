@@ -26,4 +26,6 @@ jobs:
         shell: bash
         run: |
           grep -A7 '^  webview_flutter_windows:' pubspec.lock
-          git diff -- pubspec.lock | head -150
+          echo LOCKFILE_JSON_START
+          python3 -c 'import json; print(json.dumps(open("pubspec.lock", encoding="utf-8").read(), ensure_ascii=True))'
+          echo LOCKFILE_JSON_END
