@@ -73,6 +73,10 @@ jobs:
         shell: pwsh
         run: flutter config --enable-windows-desktop
 
+      - name: Resolve Windows Flutter dependencies
+        shell: pwsh
+        run: flutter pub get
+
       - name: Build zhenguojian with all sources
         shell: pwsh
         env:
