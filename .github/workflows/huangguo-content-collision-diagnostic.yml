@@ -1,0 +1,26 @@
+name: Huangguo repeated-content live diagnostic
+on:
+  push:
+    branches:
+      - diagnostics/huangguo-content-collision-20261024
+    paths:
+      - native/core/huangguo_content_collision_live_test.go
+      - .github/workflows/huangguo-content-collision-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Probe text-only Huangguo catalogue titles detail IDs and distinct episode URLs
+        working-directory: native
+        run: go test ./core -run '^TestHuangguoLiveCatalogDetailIdentityDiagnostics$' -count=1 -v -timeout 3m
