@@ -3,6 +3,11 @@ import 'package:duanju_app/hongguo_web_fallback.dart';
 import 'package:duanju_app/models.dart';
 
 void main() {
+  Drama drama(String source, String sourceId) =>
+      Drama(id: '$source:$sourceId', source: source, sourceId: sourceId, title: '測試');
+  Episode episode(String videoUrl) =>
+      Episode({'videoUrl': videoUrl, 'id': 'episode', 'title': '第一集'}, 1);
+
   test('Windows direct play selects only validated Hongguo URLs', () {
     final item = Drama(id:'hongguo:123', source:'hongguo', sourceId:'123', title:'修仙滿級回現代');
     final detail = DramaDetail(item, [
@@ -80,14 +85,10 @@ void main() {
       expect(trustedWindowsExplorerPath(root), isNull);
     }
   });
-  Drama drama(String source, String sourceId) =>
-      Drama(id: '$source:$sourceId', source: source, sourceId: sourceId, title: '測試');
   test('known public Hongguo detail deep link uses numeric series ID only', () {
     expect(officialHongguoDramaUrl(drama('hongguo', '7615112833881082905')),
       'https://hongguoduanju.com/detail?series_id=7615112833881082905');
   });
-  Episode episode(String videoUrl) =>
-      Episode({'videoUrl': videoUrl, 'id': 'episode', 'title': '第一集'}, 1);
 
   test('opens only the exact public episode for the requested series', () {
     expect(
