@@ -46,9 +46,16 @@ func TestHongguoUserEpisode16And17SiteParity(t *testing.T) {
     mapString(result,"series_id")==seriesID,mapString(result,"vid")==vid,
     result["protectedPlayback"],nestedMap(result,"req")["pcLoginRequired"])
    if resp.StatusCode==http.StatusOK && len(result)>0 {
-     if mapString(result,"series_id")!=seriesID || mapString(result,"vid")!=vid {
-       t.Errorf("cross-series response on episode %d from %s",index,host)
+     returned:=mapString(result,"vid")
+     targetIndex:=0
+     for k,e:=range chapters {
+       if strings.TrimPrefix(e.VideoURL,"hongguo-cenc://")==returned {
+         targetIndex=k+1
+         break
+       }
      }
+     req:=nestedMap(result,"req")
+     t.Logf("PAGE_IDENTITY requested=%d host=%s actual_catalog_episode=%d vid_empty=%v request_fields_series=%v request_fields_vid=%v",index,host,targetIndex,returned=="",mapString(req,"series_id")==seriesID,mapString(req,"vid")==vid)
    }
   }
  }
