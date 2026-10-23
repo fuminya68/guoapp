@@ -238,6 +238,21 @@ jobs:
           }
           Write-Host 'Defender custom scan completed without detections'
 
+      - name: Disposable Windows runtime behavior and persistence audit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./scripts/audit_windows_runtime.ps1 -Executable dist/security-bundle/zhenguojian.exe -ReportPath dist/security-evidence/windows-runtime-behavior.json -DurationSeconds 16
+
+      - name: Upload Windows behavioral evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-behavior-evidence
+          path: dist/security-evidence/windows-runtime-behavior.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Verify packaged EXE, native media open and remux
         shell: pwsh
         run: |
