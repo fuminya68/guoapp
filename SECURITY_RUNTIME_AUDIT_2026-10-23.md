@@ -28,11 +28,10 @@
 啟動於 `2026-10-23T13:39:21Z`，Windows GitHub Actions runner，監測 16 秒，紀錄存放 `windows-runtime-security-observations` Artifact。
 
 - 主程序：`zhenguojian.exe`；取樣期間**未觀察到衍生子程序**。
-- TCP：8 條端點狀態記錄（含 SynSent 與 Established、相同連線重複狀態）；**3 個不同遠端公網 IP**，遠端連接埠均為 443：
+- TCP：8 條端點狀態記錄（含 SynSent 與 Established、相同連線重複狀態）；**4 個不同遠端公網 IP，分布於三組網段**，遠端連接埠均為 443：
   - `98.96.242.53`
   - `155.102.176.82` / `155.102.176.86`
   - `113.96.147.123`
-  （嚴格來說是 4 個不同 IP，分布在三組網段。）
 - UDP：取樣期間未觀察到。
 - Windows Run/RunOnce 登錄值、Startup 資料夾、已啟用排程工作：**沒有新增記錄**。
 - 監測工具回報 `samplingErrors: []`。
