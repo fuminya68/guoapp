@@ -769,9 +769,6 @@ func parseHuangguoAIEpisodes(rawHTML, pageURL, sourceID string) []providerEpisod
 		if key == "" || seen[key] || seen[fullURL] {
 			continue
 		}
-		if seen[key] || seen[fullURL] {
-			continue
-		}
 		seen[key] = true
 		seen[fullURL] = true
 		idx := episodeIndex(title, 0)
