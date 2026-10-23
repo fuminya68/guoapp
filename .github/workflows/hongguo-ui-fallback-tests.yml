@@ -1,0 +1,36 @@
+name: Taiwan UI and Hongguo safe fallback smoke
+on:
+  push:
+    branches:
+      - security/hongguo-verified-fallback-20261024
+    paths:
+      - .github/workflows/hongguo-ui-fallback-tests.yml
+      - lib/hongguo_web_fallback.dart
+      - lib/player_screen.dart
+      - lib/download_picker.dart
+      - lib/detail_screen.dart
+      - lib/playback_preferences.dart
+      - test/hongguo_web_fallback_test.dart
+      - test/playback_volume_test.dart
+      - test/downloads_test.dart
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-widget-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Test safe public Hongguo deep link and volume persistence
+        run: flutter test test/hongguo_web_fallback_test.dart test/playback_volume_test.dart --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
+      - name: Test Traditional Chinese download picker selection
+        run: flutter test test/downloads_test.dart --plain-name 'detail download picker handles VIP, quality' --dart-define=ALL_SOURCES=true --dart-define=DISABLE_REMOTE_IMAGES=true
