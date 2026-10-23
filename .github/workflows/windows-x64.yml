@@ -10,6 +10,7 @@ on:
       - 'lib/**'
       - 'native/**'
       - 'test/**'
+      - 'integration_test/**'
       - 'packages/**'
       - 'scripts/**'
       - 'pubspec.lock'
