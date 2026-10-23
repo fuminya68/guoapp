@@ -33,18 +33,22 @@ Future<void> runPackageSmoke(List<String> arguments) async {
       configuration: const PlayerConfiguration(muted: true, vo: 'null'),
     );
     await player.setAudioTrack(AudioTrack.no());
-    final advancing = player.stream.position.firstWhere(
-      (time) => time.inMilliseconds >= 400,
+    // CI's headless video output (vo=null) can parse the video and load media
+    // without a running clock. Do not confuse clock advancement with decode.
+    // Full real video-frame decoding is verified in Windows GUI integration.
+    final loaded = player.stream.duration.firstWhere(
+      (time) => time.inMilliseconds >= 2500,
     );
-    await player.open(Media(remuxed.path));
-    await advancing.timeout(const Duration(seconds: 20));
+    await player.open(Media(remuxed.path), play: false);
+    await loaded.timeout(const Duration(seconds: 20));
     await report.writeAsString(
       jsonEncode({
         'ok': true,
         'nativeCore': true,
         'ffprobe': true,
         'remux': true,
-        'mediaKitPlayback': true,
+        'mediaKitHeadlessOpen': true,
+        'mediaDurationMs': player.state.duration.inMilliseconds,
       }),
       flush: true,
     );
