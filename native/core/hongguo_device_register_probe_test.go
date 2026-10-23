@@ -152,5 +152,17 @@ func TestHongguoAnonymousDeviceRegistrationCompatibility(t *testing.T) {
    data,e:=engine.downloader.hongguoAppRequest(ctx,http.MethodPost,"/reading/distribution/category/landpage/v/",nil,apiPayload)
    t.Logf("API_REGISTERED_WITH_COOKIES HOST=%s JSON=%v ERR=%v",host,len(data)>0,e)
  }
+ dramas,_,err:=engine.downloader.fetchHongguoCategoryPage(ctx,"ai-drama?page=1","AI劇")
+ if err!=nil || len(dramas)==0 {t.Logf("MEDIA_DIAGNOSTIC_WEB_CATALOG err=%v count=%d",err,len(dramas));return}
+ _,chapters,err:=engine.downloader.fetchHongguoWebChapters(ctx,dramas[0].SourceID)
+ if err!=nil || len(chapters)==0 {t.Logf("MEDIA_DIAGNOSTIC_WEB_EPISODES err=%v count=%d",err,len(chapters));return}
+ videoID:=strings.TrimPrefix(chapters[0].VideoURL,"hongguo-cenc://")
+ for _,host:=range []string{"api5-normal-sinfonlineb.fqnovel.com","api5-normal-sinfonlinea.fqnovel.com","api5-normal-sinfonlinec.fqnovel.com"} {
+   hc.mu.Lock()
+   hc.baseURL="https://"+host
+   hc.mu.Unlock()
+   media,e:=engine.downloader.resolveHongguoAppMedia(ctx,videoID)
+   t.Logf("MEDIA_REGISTERED_WITH_COOKIES HOST=%s HAS_URL=%v ERR=%v",host,media.URL!="",e)
+ }
 }
 
