@@ -150,8 +150,11 @@ void main() {
     binding.reportData ??= {};
     binding.reportData!['windowsMedia'] = observations;
 
+    // PlayerScreen owns its Player and releases it asynchronously on unmount.
+    // Disposing the same instance in the test triggers media_kit's
+    // "[Player] has been disposed" assertion after both decodes passed.
     await tester.pumpWidget(const SizedBox.shrink());
-    await player.dispose();
+    await tester.pump(const Duration(milliseconds: 400));
     store.dispose();
   }, timeout: const Timeout(Duration(minutes: 4)));
 }
