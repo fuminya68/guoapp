@@ -21,7 +21,6 @@ jobs:
         with:
           go-version: '1.26.10'
           cache-dependency-path: native/go.sum
-      - name: Probe text-only Huangguo catalogue titles detail IDs and distinct episode URLs
+      - name: Compare known Huangguo video sources without fetching media
         working-directory: native
-        run: go test ./core -run '^TestHuangguo(LiveCatalogDetailIdentityDiagnostics|KnownTitlesCollisionSignatures) -count=1 -v -timeout 3m
- -count=1 -v -timeout 3m
+        run: go test ./core -run TestHuangguoKnownTitlesCollisionSignatures -count=1 -v -timeout 3m
