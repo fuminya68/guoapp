@@ -24,7 +24,7 @@ def protections(path):
             raise ValueError("not a Windows PE file")
         header = struct.unpack_from("<I", mz, 0x3c)[0]
         stream.seek(header)
-        if stream.read(4) != b"PE\\0\\0":
+        if stream.read(4) != b"PE" + bytes((0, 0)):
             raise ValueError("invalid PE header")
         stream.seek(header + 24)
         magic = struct.unpack("<H", stream.read(2))[0]
