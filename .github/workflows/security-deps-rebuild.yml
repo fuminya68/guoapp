@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   update-go-lock:
@@ -26,6 +26,17 @@ jobs:
           go get github.com/cloudflare/circl@v1.6.3 golang.org/x/net@v0.55.0 golang.org/x/text@v0.39.0
           go mod tidy
           go mod verify
+      - name: Commit pinned dependency repairs to security branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add native/go.mod native/go.sum
+          if ! git diff --cached --quiet; then
+            git commit -m "security: pin patched Go dependencies"
+            git push origin HEAD:security/harden-windows-v1
+          fi
       - name: Run Go tests with patched dependencies
         id: patched_tests
         continue-on-error: true
