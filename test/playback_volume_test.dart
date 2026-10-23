@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:guoapp/playback_preferences.dart';
+import 'package:duanju_app/playback_preferences.dart';
 
 void main() {
   test('volume is stored across playback sessions and sources', () {
