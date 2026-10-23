@@ -177,6 +177,10 @@ func (manager *nativeDownloads) downloadFileAttempt(ctx context.Context, address
 	if !isProviderHTTPMediaURL(address) {
 		return 0, false, errors.New("媒体下载地址无效")
 	}
+	parsedAddress, err := url.Parse(address)
+	if err != nil || mediaSSRFAllowedURL(parsedAddress) != nil {
+		return 0, false, errors.New("媒体下载地址不是公网地址")
+	}
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	inactivity := time.AfterFunc(30*time.Second, cancel)
@@ -192,9 +196,11 @@ func (manager *nativeDownloads) downloadFileAttempt(ctx context.Context, address
 		request.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 		request.Header.Set("If-Range", old.Validator)
 	}
-	client := *manager.engine.downloader.client
+	secure := newMediaSSRFTransport()
+	defer secure.CloseIdleConnections()
+	client := mediaSSRFClient(manager.engine.downloader.client, secure)
 	client.Timeout = 0
-	response, err := manager.engine.downloader.doMediaRequestWithClient(request, &client)
+	response, err := manager.engine.downloader.doMediaRequestWithClient(request, client)
 	if err != nil {
 		return 0, false, errors.New("下载连接中断，请检查网络后继续")
 	}
