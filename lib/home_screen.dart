@@ -95,12 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
         .where((source) => source.onlineSearch)
         .toList();
     if (online.isEmpty) {
-      return '筛选本机已更新剧库';
+      return '筛選本機已更新劇庫';
     }
     final names = online.map((source) => source.name).join('、');
     return online.length == _group.sources.length
         ? '搜索$names'
-        : '搜索$names及本机剧库';
+        : '搜索$names及本機劇庫';
   }
 
   String get _category => _categorySelections[_group.id] ?? '';
@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           } catch (error) {
             if (mounted && epoch == widget.store.profileEpoch) {
-              setState(() => _error = '更新后读取缓存失败：$error');
+              setState(() => _error = '更新後读取缓存失败：$error');
             }
           }
         }
@@ -366,9 +366,9 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (final mode in const {
-                  'auto': '自动识别设备',
-                  'television': '电视 / 遥控器',
-                  'standard': '手机 / 电脑',
+                  'auto': '自動识別設備',
+                  'television': '电視 / 遥控器',
+                  'standard': '手機 / 电脑',
                 }.entries)
                   RadioListTile<String>(
                     value: mode.key,
@@ -395,10 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (_) => TelevisionSearchDialog(
         initialValue: _search.text,
         title: _group.id == 'all'
-            ? '搜索已开放站源'
+            ? '搜索已開放站源'
             : _onlineSearch
-            ? '搜索${_group.name}短剧'
-            : '筛选当前已加载短剧',
+            ? '搜索${_group.name}短劇'
+            : '筛選当前已加載短劇',
         recentSearches: widget.store.recentSearches,
         onCancel: () => unawaited(widget.repository.cancelSuggestions()),
         suggestions: _searchSuggestions ? widget.repository.suggestions : null,
@@ -708,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedDramas.length >= BatchDownloads.maxDramas) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('一次最多选择 50 部短剧，请分批下载')));
+      ).showSnackBar(const SnackBar(content: Text('一次最多選擇 50 部短劇，請分批下載')));
       return;
     }
     setState(() {
@@ -823,14 +823,14 @@ class _HomeScreenState extends State<HomeScreen> {
             titleSpacing: 12,
             title: _selectionMode
                 ? const Text(
-                    '选择短剧',
+                    '選擇短劇',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   )
                 : _tab == 0
                 ? PopupMenuButton<SourceGroup>(
                     key: const ValueKey('source-switch'),
-                    tooltip: '切换站源',
+                    tooltip: '切換站源',
                     enabled: _sourceGroups.length > 1,
                     onSelected: _changeGroup,
                     itemBuilder: (_) => [
@@ -885,14 +885,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_tab == 1)
                   IconButton(
                     key: const ValueKey('follow-lan-sync'),
-                    tooltip: '追剧同步',
+                    tooltip: '追劇同步',
                     onPressed: () => openLanSync(context),
                     icon: const Icon(Icons.sync_rounded),
                   ),
                 if (_tab == 0) ...[
                   if (!_showRecommendations)
                     IconButton(
-                      tooltip: '排序与筛选 · ${widget.store.catalogView.sort.label}',
+                      tooltip: '排序與筛選 · ${widget.store.catalogView.sort.label}',
                       onPressed: _chooseCatalogView,
                       color:
                           widget.store.catalogView.sort != CatalogSort.source ||
@@ -903,7 +903,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   IconButton(
                     key: const ValueKey('open-rankings'),
-                    tooltip: '榜单',
+                    tooltip: '榜單',
                     onPressed: widget.store.sources.isEmpty
                         ? null
                         : _openRankings,
@@ -914,7 +914,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       widget.repository.supportsDownloads)
                     IconButton(
                       key: const ValueKey('select-catalog-dramas'),
-                      tooltip: '多选下载',
+                      tooltip: '多選下載',
                       onPressed: () => setState(() => _selectionMode = true),
                       icon: const Icon(Icons.checklist_rounded),
                     ),
@@ -941,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _group.sources.any(
                           (source) => _updater.busy(source.id),
                         ),
-                    tooltip: '更新剧库',
+                    tooltip: '更新劇庫',
                     onPressed: widget.store.sources.isEmpty
                         ? null
                         : _refreshCatalog,
@@ -983,7 +983,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Color(0xFFFF765F),
                         ),
                         children: [
-                          const Text('独立运行，打开即可浏览和播放。观看记录与追剧收藏保存在当前设备。'),
+                          const Text('独立运行，打開即可浏覽和播放。觀看記錄與追劇收藏保存在当前設備。'),
                         ],
                       );
                     }
@@ -999,7 +999,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             !_group.sources.any(
                               (source) => _updater.busy(source.id),
                             ),
-                        child: const Text('更新剧库'),
+                        child: const Text('更新劇庫'),
                       ),
                     if (widget.repository.supportsSourceManagement)
                       const PopupMenuItem(
@@ -1009,12 +1009,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const PopupMenuItem(value: 'users', child: Text('用户管理')),
                     const PopupMenuItem(
                       value: 'settings',
-                      child: Text('设置与备份'),
+                      child: Text('設置與備份'),
                     ),
                     const PopupMenuItem(value: 'display', child: Text('界面模式')),
                     const PopupMenuItem(
                       value: 'about',
-                      child: Text('关于$appName'),
+                      child: Text('關于$appName'),
                     ),
                   ],
                 ),
@@ -1035,11 +1035,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final entry in [
-                            (Icons.explore_rounded, '发现'),
-                            (Icons.bookmark_rounded, '追剧'),
-                            (Icons.history_rounded, '最近观看'),
+                            (Icons.explore_rounded, '發現'),
+                            (Icons.bookmark_rounded, '追劇'),
+                            (Icons.history_rounded, '最近觀看'),
                             if (widget.store.canDownload)
-                              (Icons.download_rounded, '下载'),
+                              (Icons.download_rounded, '下載'),
                           ].indexed)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 14),
@@ -1067,22 +1067,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       NavigationRailDestination(
                         icon: Icon(Icons.explore_outlined),
                         selectedIcon: Icon(Icons.explore),
-                        label: Text('发现'),
+                        label: Text('發現'),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.bookmark_border_rounded),
                         selectedIcon: Icon(Icons.bookmark_rounded),
-                        label: Text('追剧'),
+                        label: Text('追劇'),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.history_rounded),
-                        label: Text('最近观看'),
+                        label: Text('最近觀看'),
                       ),
                       if (widget.store.canDownload)
                         NavigationRailDestination(
                           icon: Icon(Icons.download_outlined),
                           selectedIcon: Icon(Icons.download_rounded),
-                          label: Text('下载'),
+                          label: Text('下載'),
                         ),
                     ],
                   ),
@@ -1092,8 +1092,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _tab == 0
                       ? widget.store.sources.isEmpty
                             ? const StatusPanel(
-                                title: '暂无可用站源',
-                                message: '请联系管理员为当前用户开放站源。',
+                                title: '暫無可用站源',
+                                message: '請联系管理员為当前用户開放站源。',
                               )
                             : _catalog(selectionInBody: desktop || television)
                       : _tab == 3
@@ -1131,22 +1131,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     NavigationDestination(
                       icon: Icon(Icons.explore_outlined),
                       selectedIcon: Icon(Icons.explore),
-                      label: '发现',
+                      label: '發現',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.bookmark_border_rounded),
                       selectedIcon: Icon(Icons.bookmark_rounded),
-                      label: '追剧',
+                      label: '追劇',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.history_rounded),
-                      label: '最近观看',
+                      label: '最近觀看',
                     ),
                     if (widget.store.canDownload)
                       NavigationDestination(
                         icon: Icon(Icons.download_outlined),
                         selectedIcon: Icon(Icons.download_rounded),
-                        label: '下载',
+                        label: '下載',
                       ),
                   ],
                 ),
@@ -1243,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               if (_supportsVipFilter)
                 IconButton(
-                  tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：显示',
+                  tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：顯示',
                   onPressed: () => saveUserChange(
                     context,
                     () => widget.store.setHideVip(!widget.store.hideVip),
@@ -1277,13 +1277,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 18),
-                          Text('正在加载剧集'),
+                          Text('正在加載劇集'),
                         ],
                       ),
                     )
                   : _items.isEmpty && _error != null
                   ? StatusPanel(
-                      title: '暂时无法加载',
+                      title: '暫時無法加載',
                       message: _error!,
                       onRetry: () => _load(force: true),
                       secondaryAction:
@@ -1297,12 +1297,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : items.isEmpty
                   ? StatusPanel(
-                      title: '没有找到匹配的短剧',
+                      title: '没有找到匹配的短劇',
                       message: _hideVip
-                          ? '可以换个搜索词，或显示 VIP 内容。'
+                          ? '可以換個搜索词，或顯示 VIP 內容。'
                           : widget.store.sources.length > 1
-                          ? '可以换个搜索词或切换站源。'
-                          : '可以换个搜索词，或刷新后重试。',
+                          ? '可以換個搜索词或切換站源。'
+                          : '可以換個搜索词，或刷新後重試。',
                       onRetry:
                           _hasMore &&
                               !_loadingMore &&
@@ -1313,7 +1313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ))
                           ? () => _load(more: true)
                           : null,
-                      action: '加载更多',
+                      action: '加載更多',
                     )
                   : LayoutBuilder(
                       builder: (context, constraints) {
@@ -1331,11 +1331,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? const CircularProgressIndicator()
                                     : _hasMore
                                     ? RemoteButton(
-                                        label: '加载更多',
+                                        label: '加載更多',
                                         icon: Icons.expand_more,
                                         onPressed: () => _load(more: true),
                                       )
-                                    : const Text('已经看到这里的全部剧集'),
+                                    : const Text('已經看到這里的全部劇集'),
                               ),
                             ),
                           );
@@ -1379,10 +1379,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                             icon: const Icon(
                                               Icons.expand_more_rounded,
                                             ),
-                                            label: const Text('加载更多'),
+                                            label: const Text('加載更多'),
                                           )
                                         : Text(
-                                            '已经看到这里的全部剧集',
+                                            '已經看到這里的全部劇集',
                                             style: TextStyle(
                                               color: Theme.of(
                                                 context,
@@ -1432,7 +1432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      count == 0 ? '点选要下载的短剧' : '已选 $count 部',
+                      count == 0 ? '点選要下載的短劇' : '已選 $count 部',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -1441,7 +1441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       count == 0
                           ? '最多 ${BatchDownloads.maxDramas} 部'
-                          : '下一步选择分集和画质',
+                          : '下一步選擇分集和畫質',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

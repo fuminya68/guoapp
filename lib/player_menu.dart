@@ -70,7 +70,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
     try {
       await action();
     } catch (_) {
-      if (mounted) setState(() => _error = '未能保存设置，请检查存储空间后重试。');
+      if (mounted) setState(() => _error = '未能保存設置，請檢查存储空間後重試。');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -82,10 +82,10 @@ class _PlayerMenuState extends State<PlayerMenu> {
     final landscape = size.width > size.height;
     final colors = Theme.of(context).colorScheme;
     final title = switch (widget.section) {
-      PlayerMenuSection.episodes => '选集 · 共 ${widget.episodes.length} 集',
+      PlayerMenuSection.episodes => '選集 · 共 ${widget.episodes.length} 集',
       PlayerMenuSection.speed => '播放倍速',
       PlayerMenuSection.quality => '清晰度',
-      PlayerMenuSection.settings => '播放设置',
+      PlayerMenuSection.settings => '播放設置',
     };
     return Dialog(
       key: const ValueKey('player-menu'),
@@ -108,7 +108,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
                     ),
                   ),
                   IconButton(
-                    tooltip: '关闭菜单',
+                    tooltip: '關闭菜單',
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -191,10 +191,10 @@ class _PlayerMenuState extends State<PlayerMenu> {
           const SizedBox(height: 8),
           Text(
             widget.local
-                ? '本集正在播放本地原画，画质偏好用于后续在线播放。'
+                ? '本集正在播放本地原畫，畫質偏好用于後續在線播放。'
                 : widget.actualQuality > 0
                 ? '当前播放 ${widget.actualQuality}P'
-                : '使用源站可用画质',
+                : '使用源站可用畫質',
             style: helperStyle,
           ),
           const SizedBox(height: 8),
@@ -205,7 +205,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
               for (final quality in qualities)
                 ChoiceChip(
                   key: ValueKey('menu-quality-$quality'),
-                  label: Text(quality == 0 ? '自动（优先高清）' : '${quality}P'),
+                  label: Text(quality == 0 ? '自動（優先高清）' : '${quality}P'),
                   selected: quality == preferences.quality,
                   onSelected: _busy
                       ? null
@@ -221,7 +221,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '已保存 ${preferences.quality}P 偏好，本集暂无此画质。',
+                '已保存 ${preferences.quality}P 偏好，本集暫無此畫質。',
                 style: helperStyle,
               ),
             ),
@@ -243,7 +243,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
           SwitchListTile.adaptive(
             key: const ValueKey('player-danmaku-enabled'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('弹幕'),
+            title: const Text('彈幕'),
             subtitle: Text(widget.danmakuStatus),
             value: preferences.danmaku,
             onChanged: _busy
@@ -259,7 +259,7 @@ class _PlayerMenuState extends State<PlayerMenu> {
               key: const ValueKey('player-danmaku-retry'),
               onPressed: _busy ? null : widget.onRetryDanmaku,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('重试弹幕'),
+              label: const Text('重試彈幕'),
             ),
           const SizedBox(height: 8),
         ],
@@ -267,8 +267,8 @@ class _PlayerMenuState extends State<PlayerMenu> {
           SwitchListTile.adaptive(
             key: const ValueKey('player-preload-enabled'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('下一集预加载'),
-            subtitle: Text(widget.local ? '本地播放不预取网络视频' : widget.preloadStatus),
+            title: const Text('下一集預加載'),
+            subtitle: Text(widget.local ? '本地播放不預取網絡視頻' : widget.preloadStatus),
             value: preferences.preload,
             onChanged: _busy
                 ? null
@@ -282,8 +282,8 @@ class _PlayerMenuState extends State<PlayerMenu> {
           SwitchListTile.adaptive(
             key: const ValueKey('player-auto-advance'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('自动连播'),
-            subtitle: const Text('关闭后，播放结束停在当前集'),
+            title: const Text('自動連播'),
+            subtitle: const Text('關闭後，播放結束停在当前集'),
             value: preferences.autoAdvance,
             onChanged: _busy
                 ? null
@@ -302,20 +302,20 @@ class _PlayerMenuState extends State<PlayerMenu> {
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
             ),
-            label: Text(widget.favorite ? '取消追剧' : '加入追剧'),
+            label: Text(widget.favorite ? '取消追劇' : '加入追劇'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             key: const ValueKey('player-diary-btn'),
             onPressed: () => DiaryService.showDiaryDialog(context),
             icon: const Icon(Icons.receipt_long_rounded),
-            label: const Text('查看播放调试日记'),
+            label: const Text('查看播放调試日記'),
           ),
           const SizedBox(height: 20),
           Text(
             widget.mobile
-                ? '上下滑切集；长按画面临时 3 倍速，松开恢复。竖屏轻点暂停，横屏轻点显示控制；双击播放或暂停。'
-                : '空格：播放 / 暂停\n左右键：后退 / 快进 5 秒\n长按右键或画面：临时 3 倍速\n上下键：音量 ±5%，M：静音\nF、F11、Ctrl+F：全屏\nEsc：先关闭菜单，再退出全屏',
+                ? '上下滑切集；长按畫面临時 3 倍速，松開恢復。竖屏轻点暫停，横屏轻点顯示控制；双击播放或暫停。'
+                : '空格：播放 / 暫停\n左右键：後退 / 快進 5 秒\n长按右键或畫面：临時 3 倍速\n上下键：音量 ±5%，M：靜音\nF、F11、Ctrl+F：全屏\nEsc：先關闭菜單，再退出全屏',
             style: helperStyle.copyWith(height: 1.6),
           ),
         ],
@@ -332,7 +332,7 @@ class PlayerEpisodeGrid extends StatelessWidget {
     required this.onSelected,
     this.keyPrefix = 'play-episode',
     this.compact = false,
-    this.title = '选集',
+    this.title = '選集',
   });
   final List<Episode> episodes;
   final int currentIndex;

@@ -204,7 +204,7 @@ class _DetailScreenState extends State<DetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(added == 0 ? '所选集数已在下载列表中' : '已加入 $added 集，已有任务自动跳过'),
+          content: Text(added == 0 ? '所選集數已在下載列表中' : '已加入 $added 集，已有任务自動跳過'),
           action: SnackBarAction(
             label: '查看',
             onPressed: () {
@@ -243,8 +243,8 @@ class _DetailScreenState extends State<DetailScreen> {
       final accepted = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('这是一集 VIP 内容'),
-          content: const Text('站源可能只提供试看或限制播放。'),
+          title: const Text('這是一集 VIP 內容'),
+          content: const Text('站源可能只提供試看或限制播放。'),
           actions: [
             TextButton(
               autofocus: AppLayout.isTelevision(context),
@@ -253,7 +253,7 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('尝试播放'),
+              child: const Text('尝試播放'),
             ),
           ],
         ),
@@ -337,7 +337,7 @@ class _DetailScreenState extends State<DetailScreen> {
           actions: [
             RefreshAction(
               loading: _loading,
-              tooltip: '更新剧集信息',
+              tooltip: '更新劇集信息',
               onPressed: allowed ? _load : null,
             ),
           ],
@@ -352,8 +352,8 @@ class _DetailScreenState extends State<DetailScreen> {
                 builder: (context, constraints) {
                   if (!allowed) {
                     return const StatusPanel(
-                      title: '当前用户无权访问',
-                      message: '请返回剧库后重新选择。',
+                      title: '当前用户無权访问',
+                      message: '請返回劇庫後重新選擇。',
                     );
                   }
                   if (television || constraints.maxWidth >= 960) {
@@ -488,7 +488,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       if (widget.repository.supportsDownloads &&
                           widget.store.canDownload) ...[
                         IconButton.filledTonal(
-                          tooltip: '下载选集',
+                          tooltip: '下載選集',
                           onPressed: allowed && !_loading && episodes.isNotEmpty
                               ? _download
                               : null,
@@ -516,7 +516,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           icon: const Icon(Icons.play_arrow_rounded, size: 26),
                           label: Text(
                             watched != null && episodes.isNotEmpty
-                                ? '继续播放 · 第 ${episodes[resumeIndex].number} 集'
+                                ? '继續播放 · 第 ${episodes[resumeIndex].number} 集'
                                 : '立即播放',
                             textAlign: TextAlign.center,
                           ),
@@ -543,8 +543,8 @@ class _DetailScreenState extends State<DetailScreen> {
       );
     }
     return StatusPanel(
-      title: _error != null ? '剧集信息暂时不可用' : '暂时没有可播放的集数',
-      message: _error ?? '可以更新剧集信息后重试。',
+      title: _error != null ? '劇集信息暫時不可用' : '暫時没有可播放的集數',
+      message: _error ?? '可以更新劇集信息後重試。',
       onRetry: _load,
       secondaryAction: _sourceDiagnostics,
     );
@@ -573,7 +573,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '选集 · ${episodes.length} 集$current',
+                    '選集 · ${episodes.length} 集$current',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -581,7 +581,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                 ),
-                Text(expanded ? '收起' : '展开'),
+                Text(expanded ? '收起' : '展開'),
                 const SizedBox(width: 2),
                 Icon(
                   expanded
@@ -690,10 +690,10 @@ class _DetailScreenState extends State<DetailScreen> {
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
                         drama.vipStatus == null
-                            ? 'VIP 状态待补齐'
+                            ? 'VIP 狀態待补齐'
                             : drama.vip
-                            ? 'VIP 内容'
-                            : '免费内容',
+                            ? 'VIP 內容'
+                            : '免費內容',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
@@ -711,7 +711,7 @@ class _DetailScreenState extends State<DetailScreen> {
             padding: const EdgeInsets.only(top: 10),
             child: Text(
               [
-                if (drama.onlineDate.isNotEmpty) '${drama.onlineDate} 上线',
+                if (drama.onlineDate.isNotEmpty) '${drama.onlineDate} 上線',
                 if (drama.heat.isNotEmpty) '热度 ${drama.heat}',
                 if (drama.views.isNotEmpty) '播放 ${drama.views}',
               ].join(' · '),
@@ -760,7 +760,7 @@ class _DetailScreenState extends State<DetailScreen> {
             child: TextButton(
               onPressed: () =>
                   setState(() => _expandedDescription = !_expandedDescription),
-              child: Text(_expandedDescription ? '收起简介' : '展开简介'),
+              child: Text(_expandedDescription ? '收起簡介' : '展開簡介'),
             ),
           ),
         ],
@@ -789,7 +789,7 @@ class _DetailScreenState extends State<DetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('相关推荐', style: Theme.of(context).textTheme.titleMedium),
+          Text('相關推荐', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -842,7 +842,7 @@ class _DetailScreenState extends State<DetailScreen> {
       children: [
         PopupMenuButton<String>(
           key: const ValueKey('follow-status'),
-          tooltip: '追剧与观看状态',
+          tooltip: '追劇與觀看狀態',
           onSelected: (value) async {
             if (_profileEpoch != widget.store.profileEpoch) return;
             if (value == 'remove') {
@@ -868,7 +868,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: Text(status.label),
               ),
             if (state != null)
-              const PopupMenuItem(value: 'remove', child: Text('取消追剧')),
+              const PopupMenuItem(value: 'remove', child: Text('取消追劇')),
           ],
           child: Container(
             constraints: const BoxConstraints(minHeight: 48),
@@ -891,7 +891,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(state?.label ?? '加入追剧'),
+                Text(state?.label ?? '加入追劇'),
                 const SizedBox(width: 4),
                 const Icon(Icons.expand_more_rounded, size: 18),
               ],
@@ -900,7 +900,7 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
         if (state != null && state.hasUpdates)
           ActionChip(
-            label: Text('${state.updateLabel} · 标为已读'),
+            label: Text('${state.updateLabel} · 标為已读'),
             onPressed: () => saveUserChange(
               context,
               () => widget.store.markUpdatesRead(drama.id),

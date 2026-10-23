@@ -349,7 +349,7 @@ class _PlayerControlsState extends State<PlayerControls> {
               const Spacer(),
             if (compact)
               _overlayIconButton(
-                tooltip: '旋转与全屏',
+                tooltip: '旋轉與全屏',
                 onPressed: widget.onFullscreen,
                 icon: Icons.screen_rotation_alt_rounded,
               ),
@@ -393,7 +393,7 @@ class _PlayerControlsState extends State<PlayerControls> {
           const SizedBox(width: 12),
         ],
         IconButton.filledTonal(
-          tooltip: playing ? '暂停播放' : '开始播放',
+          tooltip: playing ? '暫停播放' : '開始播放',
           iconSize: 38,
           onPressed: () {
             widget.onTogglePlayback();
@@ -718,7 +718,7 @@ class _PlayerControlsState extends State<PlayerControls> {
   Widget _danmakuTool() => _toolButton(
     key: const ValueKey('player-danmaku-toggle'),
     tooltip: widget.danmakuStatus.isEmpty
-        ? (widget.danmakuEnabled ? '关闭弹幕' : '打开弹幕')
+        ? (widget.danmakuEnabled ? '關闭彈幕' : '打開彈幕')
         : widget.danmakuStatus,
     visualWidth: 36,
     selected: widget.danmakuEnabled,
@@ -728,7 +728,7 @@ class _PlayerControlsState extends State<PlayerControls> {
     child: widget.onRetryDanmaku != null
         ? const Icon(Icons.refresh_rounded, size: 21)
         : Text(
-            '弹',
+            '彈',
             style: TextStyle(
               fontSize: 14,
               height: 1,
@@ -770,7 +770,7 @@ class _PlayerControlsState extends State<PlayerControls> {
       if (showEpisodes)
         _toolIcon(
           key: const ValueKey('player-episodes'),
-          tooltip: '选集',
+          tooltip: '選集',
           icon: Icons.grid_view_rounded,
           onPressed: widget.enabled ? () => _panel(widget.onEpisodes) : null,
         ),
@@ -789,7 +789,7 @@ class _PlayerControlsState extends State<PlayerControls> {
       if (widget.onPictureInPicture != null)
         _toolIcon(
           key: const ValueKey('player-picture-in-picture'),
-          tooltip: '画中画',
+          tooltip: '畫中畫',
           icon: Icons.picture_in_picture_alt_rounded,
           onPressed: widget.enabled
               ? () => _panel(widget.onPictureInPicture!)
@@ -797,7 +797,7 @@ class _PlayerControlsState extends State<PlayerControls> {
         ),
       _toolIcon(
         key: const ValueKey('player-fullscreen'),
-        tooltip: fullscreen ? '退出全屏' : '旋转与全屏',
+        tooltip: fullscreen ? '退出全屏' : '旋轉與全屏',
         icon: fullscreen
             ? Icons.fullscreen_exit_rounded
             : Icons.fullscreen_rounded,
@@ -831,14 +831,14 @@ class _PlayerControlsState extends State<PlayerControls> {
       if (fullscreen)
         _toolIcon(
           key: const ValueKey('player-episodes'),
-          tooltip: '选集',
+          tooltip: '選集',
           icon: Icons.grid_view_rounded,
           onPressed: widget.enabled ? () => _panel(widget.onEpisodes) : null,
         ),
       if (widget.onPictureInPicture != null)
         _toolIcon(
           key: const ValueKey('player-picture-in-picture'),
-          tooltip: '画中画',
+          tooltip: '畫中畫',
           icon: Icons.picture_in_picture_alt_rounded,
           onPressed: widget.enabled
               ? () => _panel(widget.onPictureInPicture!)
@@ -879,7 +879,7 @@ class _PlayerControlsState extends State<PlayerControls> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
-                            tooltip: volume == 0 ? '恢复音量' : '静音',
+                            tooltip: volume == 0 ? '恢復音量' : '靜音',
                             constraints: const BoxConstraints.tightFor(
                               width: 44,
                               height: 40,
@@ -972,7 +972,7 @@ class _PlayerControlsState extends State<PlayerControls> {
         if (!enhancement.canCompare) return const SizedBox.shrink();
         return _toolIcon(
           key: const ValueKey('player-enhancement-compare'),
-          tooltip: enhancement.comparing ? '原画对比中，点击恢复增强' : '原画对比',
+          tooltip: enhancement.comparing ? '原畫對比中，点击恢復增强' : '原畫對比',
           icon: Icons.compare_rounded,
           onPressed: widget.enabled
               ? () {

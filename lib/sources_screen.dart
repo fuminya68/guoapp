@@ -9,7 +9,7 @@ import 'models.dart';
 import 'source_status.dart';
 
 String sourceTimestamp(DateTime? value) {
-  if (value == null) return '尚无记录';
+  if (value == null) return '尚無記錄';
   final local = value.toLocal();
   String two(int number) => number.toString().padLeft(2, '0');
   return '${local.month}/${local.day} ${two(local.hour)}:${two(local.minute)}';
@@ -139,7 +139,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
     final health = status.health;
     if (health != null) {
       text.writeln('${health.label} · ${sourceTimestamp(health.checkedAt)}');
-      if (health.sample.isNotEmpty) text.writeln('检测剧集：${health.sample}');
+      if (health.sample.isNotEmpty) text.writeln('檢測劇集：${health.sample}');
       for (final step in health.steps) {
         text.writeln('${step.name}：${step.message}');
         text.writeln(
@@ -154,7 +154,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('诊断信息已复制')));
+      ).showSnackBar(const SnackBar(content: Text('诊断信息已復制')));
     }
   }
 
@@ -186,7 +186,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   const Padding(
                     padding: EdgeInsets.only(bottom: 16),
                     child: Text(
-                      '各站源可分别更新和检测。更新会查找新剧、继续加载一页历史内容，并分批补齐资料；离开此页后任务继续。',
+                      '各站源可分別更新和檢測。更新会查找新劇、继續加載一頁歷史內容，并分批补齐資料；離開此頁後任务继續。',
                     ),
                   ),
                   if (sources.isEmpty)
@@ -206,7 +206,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                           leading: const Icon(Icons.hub_outlined),
                           title: const Text('黄果'),
                           subtitle: Text(
-                            '${group.sources.length} 个入口 · ${group.sources.fold<int>(0, (count, source) => count + (_statuses[source.id]?.count ?? 0))} 部',
+                            '${group.sources.length} 個入口 · ${group.sources.fold<int>(0, (count, source) => count + (_statuses[source.id]?.count ?? 0))} 部',
                           ),
                           childrenPadding: const EdgeInsets.all(8),
                           children: [
@@ -262,7 +262,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
             Text('最近更新：${sourceTimestamp(status?.updatedAt)}'),
             if (status != null && status.count > 0)
               Text(
-                '已加载至第 ${status.page} 页${status.hasMore ? ' · 可继续加载' : ' · 当前分页已加载完'}',
+                '已加載至第 ${status.page} 頁${status.hasMore ? ' · 可继续加载' : ' · 当前分页已加载完'}',
               ),
             const SizedBox(height: 12),
             Wrap(
@@ -280,7 +280,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   key: ValueKey('check-${source.id}'),
                   onPressed: enabled ? () => _run(source, 'check') : null,
                   icon: const Icon(Icons.network_check),
-                  label: const Text('检测连接与播放'),
+                  label: const Text('檢測連接與播放'),
                 ),
                 if (status?.running == true)
                   TextButton(
@@ -295,18 +295,18 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     PopupMenuItem(
                       value: 'more',
                       enabled: status?.hasMore ?? true,
-                      child: const Text('继续加载一页'),
+                      child: const Text('继續加載一頁'),
                     ),
-                    const PopupMenuItem(value: 'metadata', child: Text('补齐资料')),
+                    const PopupMenuItem(value: 'metadata', child: Text('补齐資料')),
                     if (source.id == 'huangdou')
                       PopupMenuItem(
                         value: 'vipMetadata',
                         enabled: (status?.unknownVip ?? 0) > 0,
-                        child: Text('补齐 VIP 资料（${status?.unknownVip ?? 0} 部）'),
+                        child: Text('补齐 VIP 資料（${status?.unknownVip ?? 0} 部）'),
                       ),
                     const PopupMenuItem(
                       value: 'checkCatalog',
-                      child: Text('仅检测目录'),
+                      child: Text('仅檢測目錄'),
                     ),
                   ],
                 ),
@@ -333,7 +333,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '请在 $seconds 秒后重试',
+                  '請在 $seconds 秒後重試',
                   style: TextStyle(color: colors.error),
                 ),
               ),
@@ -362,7 +362,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                           ? () => _run(source, 'retrySave')
                           : null,
                       icon: const Icon(Icons.save_outlined),
-                      label: const Text('重试保存'),
+                      label: const Text('重試保存'),
                     ),
                   ],
                 ),
@@ -375,7 +375,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     child: Semantics(
                       expanded: healthExpanded,
                       child: Tooltip(
-                        message: healthExpanded ? '收起检测详情' : '展开检测详情',
+                        message: healthExpanded ? '收起檢測详情' : '展開檢測详情',
                         child: TextButton(
                           key: ValueKey('health-toggle-${source.id}'),
                           onPressed: () => setState(() {
@@ -421,14 +421,14 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     ),
                   ),
                   IconButton(
-                    tooltip: '复制诊断信息',
+                    tooltip: '復制诊断信息',
                     onPressed: () => _copy(source, status!),
                     icon: const Icon(Icons.copy_rounded),
                   ),
                 ],
               ),
               if (healthExpanded) ...[
-                if (health.sample.isNotEmpty) Text('检测剧集：${health.sample}'),
+                if (health.sample.isNotEmpty) Text('檢測劇集：${health.sample}'),
                 for (final step in health.steps)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
@@ -464,7 +464,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
               ],
             ] else ...[
               const SizedBox(height: 12),
-              const Text('尚未检测连接'),
+              const Text('尚未檢測連接'),
             ],
           ],
         ),
