@@ -1,0 +1,29 @@
+name: Resolve pinned WebView2 Dart lock entry
+on:
+  push:
+    branches:
+      - diagnostics/hongguo-webview-lock-20261024
+    paths:
+      - .github/workflows/hongguo-webview-lock-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lock-resolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Report pinned WebView2 lockfile checksum and changes
+        shell: bash
+        run: |
+          grep -A7 '^  webview_flutter_windows:' pubspec.lock
+          git diff -- pubspec.lock | head -150
