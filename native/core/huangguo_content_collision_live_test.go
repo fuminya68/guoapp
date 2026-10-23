@@ -2,6 +2,7 @@ package core
 
 import (
  "context"
+ "encoding/json"
  "crypto/sha256"
  "fmt"
  "strings"
@@ -124,6 +125,15 @@ func TestHuangguoDetailVideoAnchorOwnership(t *testing.T) {
   summary:=""
   if fromDetail!="" {sum:=sha256.Sum256([]byte(fromDetail)); summary=fmt.Sprintf("%x",sum[:6])}
   t.Logf("SOURCE_VALIDITY id=%s matching_owned_links=%d detail_has_media=%v detail_media_fingerprint=%s initial_data=%v",id,matches,fromDetail!="",summary,strings.Contains(raw,"videoInitialData"))
+  initialRe:=regexp.MustCompile(`(?is)<script\b[^>]*id=["']videoInitialData["'][^>]*>(.*?)</script>`)
+  found:=initialRe.FindStringSubmatch(raw)
+  if len(found)>1 {
+   var initial map[string]any
+   if json.Unmarshal([]byte(found[1]),&initial)==nil {
+    tracks,_:=initial["epPlaySrcs"].(map[string]any)
+    t.Logf("DETAIL_EPISODE_META id=%s declared_ep=%q declared_episode=%q direct_src=%v direct_url=%v direct_play=%v mapped_episodes=%d",id,mapString(initial,"ep"),mapString(initial,"episode"),mapString(initial,"videoSrc")!="",mapString(initial,"videoUrl")!="",mapString(initial,"playUrl")!="",len(tracks))
+   }
+  }
   t.Logf("DETAIL_PAGE id=%s all_video_anchors=%d",id,len(links))
   for index,m:=range links {
    if index>=12{break}
