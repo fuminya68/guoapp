@@ -1,0 +1,85 @@
+name: Chrome warning forensics - PR15 vs PR16
+on:
+  push:
+    branches:
+      - diagnostics/chrome-safe-browsing-pr15-pr16-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare-artifacts:
+    runs-on: windows-latest
+    timeout-minutes: 18
+    steps:
+      - name: Download PR15 from exact trusted run
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40033632410
+          name: zhenguojian-windows-x64-mpv20261021-integration
+          github-token: ${{ github.token }}
+          path: samples/pr15
+      - name: Download PR16 from exact trusted run
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40037739144
+          name: zhenguojian-windows-x64-mpv20261021-integration
+          github-token: ${{ github.token }}
+          path: samples/pr16
+      - name: Check archive identity and compare executable and DLL bytes without running anything
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = @{
+            pr15 = '271BFFC303F36765338AE585884127693DB79D24C1411CDD243C3BBB25FE66B9'
+            pr16 = '752A52DDA4F5D0D60243674670F523CF5DC834AC6F312E29ACD1B506274E0644'
+          }
+          $reports = @{}
+          foreach ($version in @('pr15','pr16')) {
+            $zip = Get-ChildItem -LiteralPath "samples/$version" -Filter '*.zip' -File | Select-Object -First 1
+            if ($null -eq $zip) { throw "Missing exact $version inner ZIP" }
+            $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash.ToUpperInvariant()
+            Write-Host "IDENTITY $version zip_sha256=$hash expected_match=$($hash -eq $expected[$version])"
+            if ($hash -ne $expected[$version]) { throw "Archive identity mismatch on $version" }
+            $destination = (Join-Path (Get-Location) "unpacked/$version")
+            New-Item -ItemType Directory -Path $destination -Force | Out-Null
+            Expand-Archive -LiteralPath $zip.FullName -DestinationPath $destination -Force
+            $exe = Join-Path $destination 'zhenguojian.exe'
+            if (-not (Test-Path -LiteralPath $exe)) { throw "Missing executable for $version" }
+            $sig = Get-AuthenticodeSignature -LiteralPath $exe
+            Write-Host "AUTHENTICODE $version status=$($sig.Status) signer=$($sig.SignerCertificate.Subject)"
+            $fileMap = @{}
+            Get-ChildItem -LiteralPath $destination -File -Recurse | ForEach-Object {
+              $rel = $_.FullName.Substring($destination.Length).TrimStart('\','/')
+              $fileMap[$rel] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+            }
+            $reports[$version] = $fileMap
+            Write-Host "MANIFEST $version count=$($fileMap.Count)"
+          }
+          $left = $reports['pr15']; $right = $reports['pr16']
+          $names = @($left.Keys + $right.Keys | Sort-Object -Unique)
+          $changed = @($names | Where-Object {
+            (-not $left.ContainsKey($_)) -or (-not $right.ContainsKey($_)) -or ($left[$_] -ne $right[$_])
+          })
+          Write-Host "DIFF changed_files=$($changed.Count) unchanged_files=$($names.Count-$changed.Count)"
+          foreach ($name in $changed) {
+            Write-Host "CHANGED relative_path=$name in_pr15=$($left.ContainsKey($name)) in_pr16=$($right.ContainsKey($name))"
+          }
+          if ($changed.Count -eq 0) { throw 'Expected at least one different binary from changed PR16 code' }
+      - name: Scan both versions with current Windows Defender definitions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $status = Get-MpComputerStatus -ErrorAction Stop
+          if (-not $status.AntivirusEnabled) { throw 'Defender unavailable, cannot complete safety comparison' }
+          Write-Host "DEFENDER signatures=$($status.AntivirusSignatureVersion) engine=$($status.AMEngineVersion)"
+          $root = (Resolve-Path 'unpacked').Path
+          Start-MpScan -ScanType CustomScan -ScanPath $root -ErrorAction Stop
+          $detections = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object {
+            @($_.Resources | Where-Object { $_ -like "*unpacked*" }).Count -gt 0
+          })
+          Write-Host "DEFENDER scan_completed=true detections=$($detections.Count)"
+          if ($detections.Count -gt 0) {
+            $detections | Select-Object ThreatName,InitialDetectionTime | Format-List | Out-String | Write-Host
+            throw 'Defender detected suspicious or malicious content'
+          }
