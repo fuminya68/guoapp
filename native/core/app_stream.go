@@ -225,6 +225,17 @@ func (stream *nativeStreamServer) nativeRewrite(token string, session *nativeStr
 	return strings.Join(output, "\n"), nil
 }
 
+// nativeIsPlaylistAsset classifies the response independently of the HLS
+// encryption key. A key may be reused for the playlist and every binary TS
+// or fMP4 segment. URL query parameters are not reliable MIME indicators.
+func nativeIsPlaylistAsset(asset nativeStreamAsset, responseContentType string, finalURL *url.URL) bool {
+	if strings.Contains(strings.ToLower(asset.contentType), "mpegurl") ||
+		strings.Contains(strings.ToLower(responseContentType), "mpegurl") {
+		return true
+	}
+	return finalURL != nil && strings.HasSuffix(strings.ToLower(finalURL.Path), ".m3u8")
+}
+
 func (stream *nativeStreamServer) nativeServe(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet && request.Method != http.MethodHead {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -316,7 +327,10 @@ func (stream *nativeStreamServer) nativeServe(writer http.ResponseWriter, reques
 	if response.Request != nil && response.Request.URL != nil {
 		finalURL = response.Request.URL
 	}
-	playlist := strings.Contains(asset.contentType, "mpegurl") || strings.Contains(contentType, "mpegurl") || strings.HasSuffix(strings.ToLower(finalURL.Path), ".m3u8") || strings.Contains(strings.ToLower(finalURL.String()), "m3u8") || len(session.key) > 0
+	// An AES-128 HLS key belongs to the session, NOT to each response type.
+	// Treating every TS/fMP4 segment as an m3u8 when key is present makes
+	// binary segments return 502 ("播放列表无效"), killing playback.
+	playlist := nativeIsPlaylistAsset(asset, contentType, finalURL)
 	reader := bufio.NewReader(response.Body)
 	if !playlist && request.Method == http.MethodGet {
 		peek, _ := reader.Peek(512)
