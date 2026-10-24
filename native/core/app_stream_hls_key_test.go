@@ -25,6 +25,7 @@ func TestNativeHLSKeyDoesNotMisclassifyMediaSegmentsAsPlaylists(t *testing.T) {
 		{"fragmented mp4", nativeStreamAsset{contentType: "video/mp4"}, "video/iso.segment", "https://media.example.com/0002.m4s", false},
 		{"nested HLS path binary TS", nativeStreamAsset{}, "application/octet-stream", "https://media.example.com/api/hls.m3u8/chunk001.ts?origin=synthetic", false},
 		{"binary AES key response", nativeStreamAsset{contentType: "application/octet-stream"}, "application/octet-stream", "https://media.example.com/key.bin", false},
+		{"unusual upstream MIME on TS segment", nativeStreamAsset{}, "text/plain; charset=utf-8", "https://media.example.com/segments/003.ts?filename=play.m3u8", false},
 		{"playlist by source path", nativeStreamAsset{}, "application/octet-stream", "https://media.example.com/variant.m3u8?session=synthetic", true},
 		{"upper-case M3U8 extension", nativeStreamAsset{}, "application/octet-stream", "https://media.example.com/MASTER.M3U8?session=synthetic", true},
 		{"playlist by declared source MIME", nativeStreamAsset{contentType: "application/vnd.apple.mpegurl"}, "application/octet-stream", "https://media.example.com/hls?id=synthetic", true},
