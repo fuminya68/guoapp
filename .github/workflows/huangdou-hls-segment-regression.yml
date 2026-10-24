@@ -1,0 +1,28 @@
+name: Huangdou AES-HLS binary segment regression
+on:
+  push:
+    branches:
+      - security/huangdou-hls-segment-classification-20261025
+    paths:
+      - native/core/app_stream.go
+      - native/core/app_stream_hls_key_test.go
+      - .github/workflows/huangdou-hls-segment-regression.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Ensure encrypted video segments are not misclassified as playlists
+        working-directory: native
+        run: go test ./core -run 'TestNativeHLSKeyDoesNotMisclassifyMediaSegmentsAsPlaylists|TestNativeHLSPlaylistSniffingRemainsAvailable' -count=1 -v
+      - name: Media SSRF and provider regression tests
+        working-directory: native
+        run: go test ./core -run 'TestMediaSSRF|TestLegacyPlaybackAndDownloadUseAuthenticatedPlaylistAndSourceKey|TestHuangguoMediaUsesBrowserSessionPageRefererAndPreviewToken' -count=1
