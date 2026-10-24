@@ -1,0 +1,21 @@
+name: Huangdou three failing titles diagnostic
+on:
+  push:
+    branches:
+      - diagnostics/huangdou-three-playback-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/go.sum
+      - name: Validate Huangdou public API and title access without fetching media
+        working-directory: native
+        run: go test ./core -run '^TestLiveHuangdouThreeReportedTitles$' -count=1 -v -timeout 4m
